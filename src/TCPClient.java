@@ -39,11 +39,12 @@ public class TCPClient {
         String[] commands = command.split(" ");
         switch(commands[0]) {
             case "GET": this.get(command);
+            case "POST": this.post(command);
+            case "HEAD": this.head(command);
         }
 
     }
-
-
+    
 
     public void get(String command){
         try (
@@ -78,6 +79,14 @@ public class TCPClient {
                     hostName);
             System.exit(1);
         }
+    }
+
+    private void head(String command) {
+        throw new UnsupportedOperationException();
+    }
+
+    private void post(String command) {
+        throw new UnsupportedOperationException();
     }
 
 
