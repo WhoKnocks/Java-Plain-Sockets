@@ -1,5 +1,6 @@
 import com.sun.org.apache.xpath.internal.SourceTree;
 
+import javax.imageio.ImageIO;
 import java.io.*;
 import java.net.*;
 
@@ -22,10 +23,10 @@ public class TCPClient {
 
     public static void main(String[] args) throws IOException {
 
-        String hostName = "www.google.com";
+        String hostName = "www.example.com";
         int portNumber = 80;
 
-        TCPClient client = new TCPClient(hostName,portNumber);
+        TCPClient client = new TCPClient(hostName, portNumber);
         client.command();
     }
 
@@ -37,34 +38,56 @@ public class TCPClient {
         System.out.println("Give Command:");
         String command = inKeyboard.readLine();
         String[] commands = command.split(" ");
-        switch(commands[0]) {
-            case "GET": this.get(command);
-            case "POST": this.post(command);
-            case "HEAD": this.head(command);
+
+        String[] headers = new String[46];
+        String header;
+        int i = 0;
+        while (!(header = inKeyboard.readLine()).equals("")) {
+            headers[i] = header;
         }
 
+        switch (commands[0]) {
+            case "GET":
+                this.get(command, headers);
+                break;
+            case "POST":
+                this.post(command);
+                break;
+            case "HEAD":
+                this.get(command, headers);
+                break;
+            case "PUT":
+                this.head(command);
+                break;
+        }
     }
-    
 
-    public void get(String command){
+
+    public void get(String command, String[] headers) {
         try (
-                Socket echoSocket = new Socket(hostName, portNumber);
+                Socket responseSocket = new Socket(hostName, portNumber);
                 PrintWriter outToServer =
-                        new PrintWriter(echoSocket.getOutputStream(), true);
+                        new PrintWriter(responseSocket.getOutputStream(), true);
                 BufferedReader inFromServer =
                         new BufferedReader(
-                                new InputStreamReader(echoSocket.getInputStream()));
+                                new InputStreamReader(responseSocket.getInputStream()));
 
         ) {
 
             outToServer.println(command);
             outToServer.println("Host: " + hostName);
+            outToServer.println("From: gertjanheir@hotmail.com");
+            for (String header : headers) {
+                if (header != null) {
+                    outToServer.println(header);
+                }
+            }
+            //outToServer.println("User-Agent: G-J'sTaak/1.0");
             outToServer.println("");
 
             String response;
             StringBuilder completeResponse = new StringBuilder();
-            while ((response = inFromServer.readLine()) != null)
-            {
+            while ((response = inFromServer.readLine()) != null) {
                 System.out.println(response);
                 completeResponse.append(response);
             }
@@ -79,6 +102,11 @@ public class TCPClient {
                     hostName);
             System.exit(1);
         }
+
+    }
+
+    public void readImage() {
+        throw new UnsupportedOperationException();
     }
 
     private void head(String command) {
@@ -89,6 +117,9 @@ public class TCPClient {
         throw new UnsupportedOperationException();
     }
 
+    private void put(String command) {
+        throw new UnsupportedOperationException();
+    }
 
 
 }
