@@ -37,7 +37,6 @@ public class TCPClient {
                         new InputStreamReader(System.in));
         System.out.println("Give Command:");
         String command = inKeyboard.readLine();
-        String[] commands = command.split(" ");
 
         String[] headers = new String[46];
         String header;
@@ -46,7 +45,7 @@ public class TCPClient {
             headers[i] = header;
         }
 
-        switch (commands[0]) {
+        switch (getHTTPCommand(command)) {
             case "GET":
                 this.get(command, headers);
                 break;
@@ -57,7 +56,7 @@ public class TCPClient {
                 this.get(command, headers);
                 break;
             case "PUT":
-                this.head(command);
+                this.put(command);
                 break;
         }
     }
@@ -76,12 +75,12 @@ public class TCPClient {
 
             outToServer.println(command);
             outToServer.println("Host: " + hostName);
-            outToServer.println("From: gertjanheir@hotmail.com");
             for (String header : headers) {
                 if (header != null) {
                     outToServer.println(header);
                 }
             }
+            //outToServer.println("From: gertjanheir@hotmail.com");
             //outToServer.println("User-Agent: G-J'sTaak/1.0");
             outToServer.println("");
 
@@ -107,6 +106,18 @@ public class TCPClient {
 
     public void readImage() {
         throw new UnsupportedOperationException();
+    }
+
+    public String getHTTPType(String command) {
+        String[] commands = command.split(" ");
+        String[] httpPart = commands[2].split("/");
+        return httpPart[1];
+
+    }
+
+    public String getHTTPCommand(String command) {
+        String[] commands = command.split(" ");
+        return commands[0];
     }
 
     private void head(String command) {
