@@ -12,7 +12,6 @@ import java.net.*;
  */
 public class TCPClient {
 
-
     String hostName;
     int portNumber;
 
@@ -23,7 +22,7 @@ public class TCPClient {
 
     public static void main(String[] args) throws IOException {
 
-        String hostName = "www.example.com";
+        String hostName = "www.gva.be";
         int portNumber = 80;
 
         TCPClient client = new TCPClient(hostName, portNumber);
@@ -88,10 +87,11 @@ public class TCPClient {
             StringBuilder completeResponse = new StringBuilder();
             while ((response = inFromServer.readLine()) != null) {
                 System.out.println(response);
-                completeResponse.append(response);
+                completeResponse.append("\n").append(response);
             }
 
-            System.out.println(completeResponse);
+            String responseNoHeaders = removeHeaders(completeResponse.toString());
+            System.out.println(HTMLParser.getImageSrc(responseNoHeaders));
 
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
@@ -112,12 +112,30 @@ public class TCPClient {
         String[] commands = command.split(" ");
         String[] httpPart = commands[2].split("/");
         return httpPart[1];
-
     }
 
     public String getHTTPCommand(String command) {
         String[] commands = command.split(" ");
         return commands[0];
+    }
+
+
+    public String removeHeaders(String httpResponse) {
+        return httpResponse.split("\\n\\n", 2)[1];
+    }
+
+    public String getHeaders(String httpResponse) {
+        return httpResponse.split("\\n\\n\\n", 2)[0];
+    }
+
+    public void saveImage(String imageString) {
+        try {
+            PrintWriter out = new PrintWriter("test.png");
+            out.print(imageString);
+            out.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     private void head(String command) {
@@ -131,6 +149,4 @@ public class TCPClient {
     private void put(String command) {
         throw new UnsupportedOperationException();
     }
-
-
 }
