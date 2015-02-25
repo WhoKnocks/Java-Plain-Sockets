@@ -3,6 +3,8 @@ import com.sun.org.apache.xpath.internal.SourceTree;
 import javax.imageio.ImageIO;
 import java.io.*;
 import java.net.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
  * A simple example TCP Client application
@@ -86,12 +88,11 @@ public class TCPClient {
             String response;
             StringBuilder completeResponse = new StringBuilder();
             while ((response = inFromServer.readLine()) != null) {
-                System.out.println(response);
                 completeResponse.append("\n").append(response);
             }
 
             String responseNoHeaders = removeHeaders(completeResponse.toString());
-            System.out.println(HTMLParser.getImageSrc(responseNoHeaders));
+            getImageSrces(completeResponse.toString());
 
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
@@ -104,8 +105,19 @@ public class TCPClient {
 
     }
 
-    public void readImage() {
-        throw new UnsupportedOperationException();
+
+
+    public void getImageSrces(String htmlString) {
+        Pattern p = Pattern.compile("<img.*src=\"([a-zA-Z0-9\\._\\-/:\\?]*)\".*");
+        Matcher m = p.matcher(htmlString);
+        while (m.find()) {
+            String src = m.group(1);
+            System.out.println(src);
+        }
+
+        System.out.println("done");
+
+
     }
 
     public String getHTTPType(String command) {
