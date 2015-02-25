@@ -49,6 +49,7 @@ public class TCPClient {
         System.out.println("Give Command:");
         String command = inKeyboard.readLine();
 
+        //headers
         String[] headers = new String[46];
         String header;
         int i = 0;
@@ -57,15 +58,15 @@ public class TCPClient {
             i++;
         }
 
+        //post||put data
         String postOrPutData = null;
-        String httpType = getHTTPCommand(command);
+        String httpType = HTTPUtilities.getHTTPCommand(command);
         if (httpType.equals("POST") || httpType.equals("PUT")) {
             postOrPutData = inKeyboard.readLine();
         }
 
         execute(command, headers, postOrPutData);
     }
-
 
     public void execute(String command, String[] headers, String postOrPutData) {
         try {
@@ -88,7 +89,7 @@ public class TCPClient {
 
             handleResponse();
 
-            if (!responseSocket.isClosed() && getHTTPType(command).equals("1.1")) {
+            if (!responseSocket.isClosed() && HTTPUtilities.getHTTPType(command).equals("1.1")) {
                 command();
             }
 
@@ -101,8 +102,8 @@ public class TCPClient {
         try {
             String response;
             StringBuilder header = new StringBuilder();
-            //First read all headers
 
+            //First read all headers
             while (!(response = inFromServer.readLine()).equals("")) {
                 System.out.println(response);
                 header.append("\n").append(response);
@@ -124,7 +125,7 @@ public class TCPClient {
 
     public String readHeader(String Header, String key) {
         for (String part : Header.split("\n")) {
-            if (part.split(":")[0].equalsIgnoreCase("Content-Length")) {
+            if (part.split(":")[0].equalsIgnoreCase(key)) {
                 return part.split(":")[1].trim();
             }
         }
@@ -143,17 +144,6 @@ public class TCPClient {
         return set;
     }
 
-
-    public String getHTTPType(String command) {
-        String[] commands = command.split(" ");
-        String[] httpPart = commands[2].split("/");
-        return httpPart[1];
-    }
-
-    public String getHTTPCommand(String command) {
-        String[] commands = command.split(" ");
-        return commands[0];
-    }
 
 
     public String removeHeaders(String httpResponse) {
@@ -174,22 +164,9 @@ public class TCPClient {
         }
     }
 
-    private void head(String command) {
-        throw new UnsupportedOperationException();
-    }
-
-    private void post(String command) {
-        throw new UnsupportedOperationException();
-    }
-
-    private void put(String command) {
-        throw new UnsupportedOperationException();
-    }
-
-
     public static void main(String[] args) throws IOException {
-        String hostName = "www.httpbin.org";
-        int portNumber = 80;
+        String hostName = "localhost";
+        int portNumber = 8080;
 
         TCPClient client = new TCPClient(hostName, portNumber);
         client.command();

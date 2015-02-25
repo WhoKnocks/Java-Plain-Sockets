@@ -1,7 +1,6 @@
 
 
 import java.io.StringReader;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.xpath.XPath;
@@ -25,7 +24,7 @@ public class HTMLParser {
         XPath xpath = xpathFactory.newXPath();
         InputSource source = new InputSource(new StringReader(htmlString));
 
-        NodeList status = null;
+        NodeList status;
         try {
             status = (NodeList) xpath.evaluate("//img/@src", source, XPathConstants.NODESET);
 
@@ -45,7 +44,7 @@ public class HTMLParser {
     public static void main(String[] args) {
         HTMLParser par = new HTMLParser();
 
-        par.getImageSrc("");
+        getImageSrc("");
 
     }
 }
