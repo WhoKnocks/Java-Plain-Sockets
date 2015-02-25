@@ -1,8 +1,8 @@
-import com.sun.org.apache.xpath.internal.SourceTree;
-
-import javax.imageio.ImageIO;
 import java.io.*;
-import java.net.*;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,21 +14,31 @@ import java.util.regex.Pattern;
  */
 public class TCPClient {
 
-    String hostName;
-    int portNumber;
+    private String hostName;
+    private int portNumber;
+
+    private Socket responseSocket;
+    private PrintWriter outToServer;
+    private BufferedReader inFromServer;
 
     public TCPClient(String hostName, int portNumber) {
         this.hostName = hostName;
         this.portNumber = portNumber;
-    }
 
-    public static void main(String[] args) throws IOException {
-
-        String hostName = "www.gva.be";
-        int portNumber = 80;
-
-        TCPClient client = new TCPClient(hostName, portNumber);
-        client.command();
+        try {
+            responseSocket = new Socket(hostName, portNumber);
+            outToServer =
+                    new PrintWriter(responseSocket.getOutputStream(), true);
+            inFromServer =
+                    new BufferedReader(
+                            new InputStreamReader(responseSocket.getInputStream()));
+        } catch (UnknownHostException e) {
+            System.err.println("Don't know about host " + hostName);
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Couldn't get I/O for the connection to " + hostName);
+            System.exit(1);
+        }
     }
 
 
@@ -44,81 +54,95 @@ public class TCPClient {
         int i = 0;
         while (!(header = inKeyboard.readLine()).equals("")) {
             headers[i] = header;
+            i++;
         }
 
-        switch (getHTTPCommand(command)) {
-            case "GET":
-                this.get(command, headers);
-                break;
-            case "POST":
-                this.post(command);
-                break;
-            case "HEAD":
-                this.get(command, headers);
-                break;
-            case "PUT":
-                this.put(command);
-                break;
+        String postOrPutData = null;
+        String httpType = getHTTPCommand(command);
+        if (httpType.equals("POST") || httpType.equals("PUT")) {
+            postOrPutData = inKeyboard.readLine();
         }
+
+        execute(command, headers, postOrPutData);
     }
 
 
-    public void get(String command, String[] headers) {
-        try (
-                Socket responseSocket = new Socket(hostName, portNumber);
-                PrintWriter outToServer =
-                        new PrintWriter(responseSocket.getOutputStream(), true);
-                BufferedReader inFromServer =
-                        new BufferedReader(
-                                new InputStreamReader(responseSocket.getInputStream()));
-
-        ) {
-
+    public void execute(String command, String[] headers, String postOrPutData) {
+        try {
             outToServer.println(command);
+            //needed for HTTP1.1, it's possible to have multiple adresses on 1 adress
             outToServer.println("Host: " + hostName);
             for (String header : headers) {
                 if (header != null) {
                     outToServer.println(header);
                 }
             }
-            //outToServer.println("From: gertjanheir@hotmail.com");
-            //outToServer.println("User-Agent: G-J'sTaak/1.0");
-            outToServer.println("");
 
-            String response;
-            StringBuilder completeResponse = new StringBuilder();
-            while ((response = inFromServer.readLine()) != null) {
-                completeResponse.append("\n").append(response);
+            if (postOrPutData != null) {
+                outToServer.println("");
+                outToServer.println(postOrPutData);
             }
 
-            String responseNoHeaders = removeHeaders(completeResponse.toString());
-            getImageSrces(completeResponse.toString());
+            //needed to end the http command
+            outToServer.println("");
 
-        } catch (UnknownHostException e) {
-            System.err.println("Don't know about host " + hostName);
-            System.exit(1);
+            handleResponse();
+
+            if (!responseSocket.isClosed() && getHTTPType(command).equals("1.1")) {
+                command();
+            }
+
         } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to " +
-                    hostName);
-            System.exit(1);
+            e.printStackTrace();
         }
+    }
 
+    public void handleResponse() {
+        try {
+            String response;
+            StringBuilder header = new StringBuilder();
+            //First read all headers
+
+            while (!(response = inFromServer.readLine()).equals("")) {
+                System.out.println(response);
+                header.append("\n").append(response);
+            }
+
+            int cont_length = Integer.parseInt(readHeader(header.toString(), "Content-Length"));
+
+            StringBuilder content = new StringBuilder();
+            while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {
+                //System.out.println(content.toString().getBytes("UTF-8").length);
+                response = inFromServer.readLine();
+                System.out.println(response);
+                content.append("\n").append(response);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String readHeader(String Header, String key) {
+        for (String part : Header.split("\n")) {
+            if (part.split(":")[0].equalsIgnoreCase("Content-Length")) {
+                return part.split(":")[1].trim();
+            }
+        }
+        return "-1";
     }
 
 
-
-    public void getImageSrces(String htmlString) {
-        Pattern p = Pattern.compile("<img.*src=\"([a-zA-Z0-9\\._\\-/:\\?]*)\".*");
+    public Set<String> getImageSrces(String htmlString) {
+        HashSet<String> set = new HashSet<>();
+        Pattern p = Pattern.compile("<img.*src=\"([a-zA-Z0-9\\._\\-/:\\?=&]*)\" .*");
         Matcher m = p.matcher(htmlString);
         while (m.find()) {
             String src = m.group(1);
-            System.out.println(src);
+            set.add(src);
         }
-
-        System.out.println("done");
-
-
+        return set;
     }
+
 
     public String getHTTPType(String command) {
         String[] commands = command.split(" ");
@@ -137,7 +161,7 @@ public class TCPClient {
     }
 
     public String getHeaders(String httpResponse) {
-        return httpResponse.split("\\n\\n\\n", 2)[0];
+        return httpResponse.split("\\n\\n", 2)[0];
     }
 
     public void saveImage(String imageString) {
@@ -160,5 +184,55 @@ public class TCPClient {
 
     private void put(String command) {
         throw new UnsupportedOperationException();
+    }
+
+
+    public static void main(String[] args) throws IOException {
+        String hostName = "www.httpbin.org";
+        int portNumber = 80;
+
+        TCPClient client = new TCPClient(hostName, portNumber);
+        client.command();
+    }
+
+
+    public String getHostName() {
+        return hostName;
+    }
+
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
+
+    public int getPortNumber() {
+        return portNumber;
+    }
+
+    public void setPortNumber(int portNumber) {
+        this.portNumber = portNumber;
+    }
+
+    public Socket getResponseSocket() {
+        return responseSocket;
+    }
+
+    public void setResponseSocket(Socket responseSocket) {
+        this.responseSocket = responseSocket;
+    }
+
+    public PrintWriter getOutToServer() {
+        return outToServer;
+    }
+
+    public void setOutToServer(PrintWriter outToServer) {
+        this.outToServer = outToServer;
+    }
+
+    public BufferedReader getInFromServer() {
+        return inFromServer;
+    }
+
+    public void setInFromServer(BufferedReader inFromServer) {
+        this.inFromServer = inFromServer;
     }
 }
