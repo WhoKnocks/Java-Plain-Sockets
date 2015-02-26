@@ -41,7 +41,6 @@ public class TCPClient {
         }
     }
 
-
     public void command() throws IOException {
         BufferedReader inKeyboard =
                 new BufferedReader(
