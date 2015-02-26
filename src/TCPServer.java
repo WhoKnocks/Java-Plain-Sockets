@@ -1,6 +1,3 @@
-//Import necessary IO and NETwork libraries
-
-import java.io.*;
 import java.net.*;
 
 /*
@@ -24,14 +21,9 @@ class TCPServer {
 
         // Wait for a connection to be made to the server socket.
         while (true) {
-            // Create	 a 'real' socket from the Server socket.
+            // Create a 'real' socket from the Server socket.
             Socket clientSocket = welcomeSocket.accept();
             new Thread(new RequestWorker(clientSocket)).start();
         }
     }
-
-    private String makeHeaders() {
-        return null;
-    }
-
 }

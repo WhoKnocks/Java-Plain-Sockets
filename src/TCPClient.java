@@ -87,7 +87,7 @@ public class TCPClient {
             //needed to end the http command
             outToServer.println("");
 
-            handleResponse();
+            handleResponse(HTTPUtilities.getHTTPCommand(command));
 
             if (!responseSocket.isClosed() && HTTPUtilities.getHTTPType(command).equals("1.1")) {
                 command();
@@ -98,7 +98,7 @@ public class TCPClient {
         }
     }
 
-    public void handleResponse() {
+    public void handleResponse(String httpCommand) {
         try {
             String response;
             StringBuilder header = new StringBuilder();
@@ -109,19 +109,23 @@ public class TCPClient {
                 header.append("\n").append(response);
             }
 
-            int cont_length = Integer.parseInt(readHeader(header.toString(), "Content-Length"));
 
-            StringBuilder content = new StringBuilder();
-            while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {
-                //System.out.println(content.toString().getBytes("UTF-8").length);
-                response = inFromServer.readLine();
-                System.out.println(response);
-                content.append("\n").append(response);
+            if (!httpCommand.equals("HEAD")) {
+                int cont_length = Integer.parseInt(readHeader(header.toString(), "Content-Length"));
+
+                StringBuilder content = new StringBuilder();
+                while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {
+                    //  System.out.println(content.toString().getBytes("UTF-8").length);
+                    response = inFromServer.readLine();
+                    System.out.println(response);
+                    content.append("\n").append(response);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
     public String readHeader(String Header, String key) {
         for (String part : Header.split("\n")) {
@@ -143,7 +147,6 @@ public class TCPClient {
         }
         return set;
     }
-
 
 
     public String removeHeaders(String httpResponse) {
