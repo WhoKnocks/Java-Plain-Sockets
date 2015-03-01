@@ -1,3 +1,7 @@
+package Client;
+
+import Helperclass.HTTPUtilities;
+
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -110,7 +114,7 @@ public class TCPClient {
 
 
             if (!httpCommand.equals("HEAD")) {
-                int cont_length = Integer.parseInt(readHeader(header.toString(), "Content-Length"));
+                int cont_length = Integer.parseInt(HTTPUtilities.readHeader(header.toString(), "Content-Length"));
 
                 StringBuilder content = new StringBuilder();
                 while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {
@@ -123,16 +127,6 @@ public class TCPClient {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-
-    public String readHeader(String Header, String key) {
-        for (String part : Header.split("\n")) {
-            if (part.split(":")[0].equalsIgnoreCase(key)) {
-                return part.split(":")[1].trim();
-            }
-        }
-        return "-1";
     }
 
 

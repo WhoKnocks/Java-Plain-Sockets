@@ -1,3 +1,6 @@
+package Client;
+
+import Helperclass.HTTPUtilities;
 import org.junit.Assert;
 import org.junit.Test;
 

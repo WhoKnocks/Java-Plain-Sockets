@@ -1,3 +1,7 @@
+package Server;
+
+import Server.RequestWorker;
+
 import java.net.*;
 
 /*
