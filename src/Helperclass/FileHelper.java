@@ -8,7 +8,6 @@ import java.io.*;
 public class FileHelper {
 
     public static String fileReader(String path) {
-        System.out.println(path);
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             StringBuilder sb = new StringBuilder();
             String line = br.readLine();

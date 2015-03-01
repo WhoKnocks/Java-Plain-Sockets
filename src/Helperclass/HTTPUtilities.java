@@ -13,7 +13,6 @@ public class HTTPUtilities {
     }
 
     public static String getHTTPCommand(String httpRequest) {
-        System.out.println(httpRequest);
         String[] commands = httpRequest.split(" ");
         return commands[0];
     }

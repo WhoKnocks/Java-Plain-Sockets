@@ -124,7 +124,6 @@ public class RequestWorker implements Runnable {
 
             //First read all headers
             while (!(clientData = inFromClient.readLine()).equals("")) {
-                System.out.println(clientData);
                 header.append("\n").append(clientData);
             }
 
@@ -132,9 +131,7 @@ public class RequestWorker implements Runnable {
 
             StringBuilder content = new StringBuilder();
             while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {
-                //  System.out.println(content.toString().getBytes("UTF-8").length);
                 clientData = inFromClient.readLine();
-                System.out.println(inFromClient);
                 content.append("\n").append(clientData);
             }
 
