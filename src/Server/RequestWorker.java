@@ -31,37 +31,11 @@ public class RequestWorker implements Runnable {
 
             //get first line (ex: GET / HTTP/1.1)
             String httpCommandLine = inFromClient.readLine();
-            //get command (ex: GET )
+            //get inputHeadersAndData (ex: GET )
             String httpCommand = HTTPUtilities.getHTTPCommand(httpCommandLine);
 
             if (httpCommand.equals("GET") || httpCommand.equals("HEAD")) {
-                String headersReceived = readHeaders();
-                System.out.println(headersReceived);
-                String contentPath = HTTPUtilities.getRequestedContentPath(httpCommandLine);
-                //check if requested content is availaible on server
-                if (!FileHelper.isContentFound(contentPath)) {
-                    outToClient.writeBytes(generateHeaders(HTTPStatusCode.NOT_FOUND, 0, "text/html"));
-                } else {
-                    int contentSize;
-                    String contentType = HTTPUtilities.getRequestedContentType(httpCommandLine);
-                    if (contentType.equals("image/png") || contentType.equals("image/jpg")) {
-                        contentSize = FileHelper.getImageSize(contentPath);
-                    } else {
-                        contentSize = FileHelper.fileReader(contentPath).getBytes("UTF-8").length;
-                    }
-
-                    String headersToSend = generateHeaders(HTTPStatusCode.OK, contentSize, contentType);
-
-                    outToClient.writeBytes(headersToSend);
-                    //send content if request is not HEAD
-                    if (httpCommand.equals("GET")) {
-                        if (HTTPUtilities.getRequestedContentType(httpCommandLine).equals("text/html")) {
-                            outToClient.writeBytes(FileHelper.fileReader(contentPath));
-                        } else {
-                            sendImage(contentPath);
-                        }
-                    }
-                }
+                handleGetOrHead(httpCommandLine);
             }
 
             // if post request append to file
@@ -92,6 +66,39 @@ public class RequestWorker implements Runnable {
         }
     }
 
+    private void handleGetOrHead(String httpCommandLine) throws IOException {
+        String headersReceived = null;
+        headersReceived = readHeaders();
+        String httpCommand = HTTPUtilities.getHTTPCommand(httpCommandLine);
+
+        System.out.println(headersReceived);
+        String contentPath = HTTPUtilities.getRequestedContentPath(httpCommandLine);
+        //first check if requested content is available on server
+        if (!FileHelper.isContentFound(contentPath)) {
+            outToClient.writeBytes(generateHeaders(HTTPStatusCode.NOT_FOUND, 0, "text/html"));
+        } else {
+            // find out content size
+            int contentSize;
+            String contentType = HTTPUtilities.getRequestedContentType(httpCommandLine);
+            if (contentType.equals("image/png") || contentType.equals("image/jpg")) {
+                contentSize = FileHelper.getImageSize(contentPath);
+            } else {
+                contentSize = FileHelper.fileReader(contentPath).getBytes("UTF-8").length;
+            }
+
+            String headersToSend = generateHeaders(HTTPStatusCode.OK, contentSize, contentType);
+
+            outToClient.writeBytes(headersToSend);
+            //send http content if request is GET
+            if (httpCommand.equals("GET")) {
+                if (HTTPUtilities.getRequestedContentType(httpCommandLine).equals("text/html")) {
+                    outToClient.writeBytes(FileHelper.fileReader(contentPath));
+                } else {
+                    sendImage(contentPath);
+                }
+            }
+        }
+    }
 
     private String generateHeaders(HTTPStatusCode statusCode, int contentLength, String contentType) {
         StringBuilder builder = new StringBuilder(statusCode.getResponse() + "\n");
@@ -137,7 +144,6 @@ public class RequestWorker implements Runnable {
     private String getReceivedContent() {
         try {
             String clientData;
-
 
             //First read all headers
             String headers = readHeaders();

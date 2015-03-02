@@ -52,14 +52,12 @@ public class TCPClient {
     }
 
 
-    public void command() throws IOException {
+    public void inputHeadersAndData() throws IOException {
         BufferedReader inKeyboard =
                 new BufferedReader(
                         new InputStreamReader(System.in));
         String fullHttpCommand = HTTPUtilities.parseCommand(httpCommand, path, httpVer);
-        System.out.println("Entered command: " + fullHttpCommand);
-
-        System.out.println("test");
+        System.out.println("Entered inputHeadersAndData: " + fullHttpCommand);
 
         //headers
         String[] headers = new String[46];
@@ -77,10 +75,10 @@ public class TCPClient {
             postOrPutData = inKeyboard.readLine();
         }
 
-        execute(fullHttpCommand, headers, postOrPutData);
+        sendHTTPCommand(fullHttpCommand, headers, postOrPutData);
     }
 
-    public void execute(String command, String[] headers, String postOrPutData) {
+    public void sendHTTPCommand(String command, String[] headers, String dataPostPut) {
         outToServer.println(command);
         //needed for HTTP1.1, it's possible to have multiple adresses on 1 adress
         outToServer.println("Host: " + hostName);
@@ -90,19 +88,20 @@ public class TCPClient {
             }
         }
 
-        if (postOrPutData != null) {
+        //check if there is additional data to send
+        if (dataPostPut != null) {
             outToServer.println("");
-            outToServer.println(postOrPutData);
+            outToServer.println(dataPostPut);
         }
 
-        //needed to end the http command
+        //needed to end the http inputHeadersAndData
         outToServer.println("");
 
         handleResponse(HTTPUtilities.getHTTPCommand(command));
 
             /*
-            if (!responseSocket.isClosed() && HTTPUtilities.getHTTPType(command).equals("1.1")) {
-                command();
+            if (!responseSocket.isClosed() && HTTPUtilities.getHTTPType(inputHeadersAndData).equals("1.1")) {
+                inputHeadersAndData();
             }
             */
     }
@@ -166,7 +165,7 @@ public class TCPClient {
         String httpVer = args[3];
 
         TCPClient client = new TCPClient(httpCommand, hostName, portNumber, httpVer);
-        client.command();
+        client.inputHeadersAndData();
     }
 
 
