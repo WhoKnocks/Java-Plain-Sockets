@@ -59,6 +59,7 @@ public class TCPClient {
         String fullHttpCommand = HTTPUtilities.parseCommand(httpCommand, path, httpVer);
         System.out.println("Entered command: " + fullHttpCommand);
 
+        System.out.println("test");
 
         //headers
         String[] headers = new String[46];
