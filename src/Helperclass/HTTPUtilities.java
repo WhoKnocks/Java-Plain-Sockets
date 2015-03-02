@@ -45,4 +45,8 @@ public class HTTPUtilities {
         return "-1";
     }
 
+    public static String parseCommand(String command, String path, String httpVer){
+        return command + " " + "/" + path + " " + httpVer;
+    }
+
 }

@@ -20,6 +20,7 @@ public class TCPClient {
 
     private String httpCommand;
     private String hostName;
+    private String path;
     private int portNumber;
     private String httpVer;
 
@@ -27,11 +28,12 @@ public class TCPClient {
     private PrintWriter outToServer;
     private BufferedReader inFromServer;
 
-    public TCPClient(String httpCommand, String hostName, int number, int portNumber) {
+    public TCPClient(String httpCommand, String uri, int portNumber, String httpVer) {
         this.httpCommand = httpCommand;
-        this.portNumber = number;
-        this.hostName = hostName;
         this.portNumber = portNumber;
+        this.hostName = uri.split("/", 2)[0];
+        this.path = uri.split("/", 2)[1];
+        this.httpVer = httpVer;
 
         try {
             responseSocket = new Socket(hostName, portNumber);
@@ -49,12 +51,14 @@ public class TCPClient {
         }
     }
 
+
     public void command() throws IOException {
         BufferedReader inKeyboard =
                 new BufferedReader(
                         new InputStreamReader(System.in));
-        System.out.println("Give Command:");
-        String command = inKeyboard.readLine();
+        String fullHttpCommand = HTTPUtilities.parseCommand(httpCommand, path, httpVer);
+        System.out.println("Entered command: " + fullHttpCommand);
+
 
         //headers
         String[] headers = new String[46];
@@ -67,33 +71,33 @@ public class TCPClient {
 
         //post||put data
         String postOrPutData = null;
-        String httpType = HTTPUtilities.getHTTPCommand(command);
+        String httpType = HTTPUtilities.getHTTPCommand(fullHttpCommand);
         if (httpType.equals("POST") || httpType.equals("PUT")) {
             postOrPutData = inKeyboard.readLine();
         }
 
-        execute(command, headers, postOrPutData);
+        execute(fullHttpCommand, headers, postOrPutData);
     }
 
     public void execute(String command, String[] headers, String postOrPutData) {
-            outToServer.println(command);
-            //needed for HTTP1.1, it's possible to have multiple adresses on 1 adress
-            outToServer.println("Host: " + hostName);
-            for (String header : headers) {
-                if (header != null) {
-                    outToServer.println(header);
-                }
+        outToServer.println(command);
+        //needed for HTTP1.1, it's possible to have multiple adresses on 1 adress
+        outToServer.println("Host: " + hostName);
+        for (String header : headers) {
+            if (header != null) {
+                outToServer.println(header);
             }
+        }
 
-            if (postOrPutData != null) {
-                outToServer.println("");
-                outToServer.println(postOrPutData);
-            }
-
-            //needed to end the http command
+        if (postOrPutData != null) {
             outToServer.println("");
+            outToServer.println(postOrPutData);
+        }
 
-            handleResponse(HTTPUtilities.getHTTPCommand(command));
+        //needed to end the http command
+        outToServer.println("");
+
+        handleResponse(HTTPUtilities.getHTTPCommand(command));
 
             /*
             if (!responseSocket.isClosed() && HTTPUtilities.getHTTPType(command).equals("1.1")) {
@@ -158,12 +162,11 @@ public class TCPClient {
         String httpCommand = args[0];
         String hostName = args[1];
         int portNumber = Integer.parseInt(args[2]);
-        int httpVer = Integer.parseInt(args[3]);
+        String httpVer = args[3];
 
-        TCPClient client = new TCPClient(httpCommand,hostName,portNumber,httpVer);
+        TCPClient client = new TCPClient(httpCommand, hostName, portNumber, httpVer);
         client.command();
     }
-
 
 
 }
