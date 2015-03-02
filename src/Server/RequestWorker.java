@@ -25,14 +25,18 @@ public class RequestWorker implements Runnable {
 
     public void run() {
         try {
+            //open streams to send and receive
             inFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             outToClient = new DataOutputStream(clientSocket.getOutputStream());
 
+            //get first line (ex: GET / HTTP/1.1)
             String httpCommandLine = inFromClient.readLine();
+            //get command (ex: GET )
             String httpCommand = HTTPUtilities.getHTTPCommand(httpCommandLine);
 
             if (httpCommand.equals("GET") || httpCommand.equals("HEAD")) {
                 String contentPath = HTTPUtilities.getRequestedContentPath(httpCommandLine);
+                //check if requested content is availaible on server
                 if (!FileHelper.isContentFound(contentPath)) {
                     outToClient.writeBytes(generateHeaders(HTTPStatusCode.NOT_FOUND, 0, "text/html"));
                 } else {
@@ -57,18 +61,23 @@ public class RequestWorker implements Runnable {
                 }
             }
 
+            // if post request append to file
             if (httpCommand.equals("POST")) {
-
-                FileHelper.appendToFile("./appendedFile.txt", getSentContent());
+                FileHelper.appendToFile("./appendedFile.txt", getReceivedContent());
             }
+
+            //if put request make new file and place content
             if (httpCommand.equals("PUT")) {
                 FileHelper.deleteFile("./newFile.txt");
                 FileHelper.newFile("./newFile.txt");
-                FileHelper.appendToFile("./newFile.txt", getSentContent());
+                FileHelper.appendToFile("./newFile.txt", getReceivedContent());
             }
 
-            outToClient.close();
-            inFromClient.close();
+            //check if 1.1 to remain the connection open
+            if (!HTTPUtilities.getHTTPType(httpCommandLine).equals("1.1")) {
+                outToClient.close();
+                inFromClient.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
             try {
@@ -106,9 +115,12 @@ public class RequestWorker implements Runnable {
 
             byte[] buffer = new byte[4096];
             int bytesRead;
+            StringBuilder b = new StringBuilder("");
             while ((bytesRead = in.read(buffer)) != -1) {
                 outToClient.write(buffer, 0, bytesRead);
+                b.append(bytesRead + "\n");
             }
+
             in.close();
 
         } catch (IOException e) {
@@ -117,7 +129,8 @@ public class RequestWorker implements Runnable {
         return null;
     }
 
-    private String getSentContent() {
+
+    private String getReceivedContent() {
         try {
             String clientData;
             StringBuilder header = new StringBuilder();
