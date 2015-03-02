@@ -18,14 +18,18 @@ import java.util.regex.Pattern;
  */
 public class TCPClient {
 
+    private String httpCommand;
     private String hostName;
     private int portNumber;
+    private String httpVer;
 
     private Socket responseSocket;
     private PrintWriter outToServer;
     private BufferedReader inFromServer;
 
-    public TCPClient(String hostName, int portNumber) {
+    public TCPClient(String httpCommand, String hostName, int number, int portNumber) {
+        this.httpCommand = httpCommand;
+        this.portNumber = number;
         this.hostName = hostName;
         this.portNumber = portNumber;
 
@@ -72,7 +76,6 @@ public class TCPClient {
     }
 
     public void execute(String command, String[] headers, String postOrPutData) {
-        try {
             outToServer.println(command);
             //needed for HTTP1.1, it's possible to have multiple adresses on 1 adress
             outToServer.println("Host: " + hostName);
@@ -92,13 +95,11 @@ public class TCPClient {
 
             handleResponse(HTTPUtilities.getHTTPCommand(command));
 
+            /*
             if (!responseSocket.isClosed() && HTTPUtilities.getHTTPType(command).equals("1.1")) {
                 command();
             }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            */
     }
 
     public void handleResponse(String httpCommand) {
@@ -142,14 +143,6 @@ public class TCPClient {
     }
 
 
-    public String removeHeaders(String httpResponse) {
-        return httpResponse.split("\\n\\n", 2)[1];
-    }
-
-    public String getHeaders(String httpResponse) {
-        return httpResponse.split("\\n\\n", 2)[0];
-    }
-
     public void saveImage(String imageString) {
         try {
             PrintWriter out = new PrintWriter("test.png");
@@ -161,51 +154,16 @@ public class TCPClient {
     }
 
     public static void main(String[] args) throws IOException {
-        String hostName = "localhost";
-        int portNumber = 8080;
 
-        TCPClient client = new TCPClient(hostName, portNumber);
+        String httpCommand = args[0];
+        String hostName = args[1];
+        int portNumber = Integer.parseInt(args[2]);
+        int httpVer = Integer.parseInt(args[3]);
+
+        TCPClient client = new TCPClient(httpCommand,hostName,portNumber,httpVer);
         client.command();
     }
 
 
-    public String getHostName() {
-        return hostName;
-    }
 
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
-    }
-
-    public int getPortNumber() {
-        return portNumber;
-    }
-
-    public void setPortNumber(int portNumber) {
-        this.portNumber = portNumber;
-    }
-
-    public Socket getResponseSocket() {
-        return responseSocket;
-    }
-
-    public void setResponseSocket(Socket responseSocket) {
-        this.responseSocket = responseSocket;
-    }
-
-    public PrintWriter getOutToServer() {
-        return outToServer;
-    }
-
-    public void setOutToServer(PrintWriter outToServer) {
-        this.outToServer = outToServer;
-    }
-
-    public BufferedReader getInFromServer() {
-        return inFromServer;
-    }
-
-    public void setInFromServer(BufferedReader inFromServer) {
-        this.inFromServer = inFromServer;
-    }
 }

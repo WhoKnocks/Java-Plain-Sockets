@@ -19,7 +19,7 @@ class TCPServer {
 
 
     public static void main(String argv[]) throws Exception {
-        // Create server (incoming) socket on port 6789.
+        // Create server (incoming) socket on port 8080.
         ServerSocket welcomeSocket = new ServerSocket(8080);
         System.out.println("Socket active");
 
@@ -27,6 +27,7 @@ class TCPServer {
         while (true) {
             // Create a 'real' socket from the Server socket.
             Socket clientSocket = welcomeSocket.accept();
+            System.out.println("Connection made" + clientSocket);
             new Thread(new RequestWorker(clientSocket)).start();
         }
     }

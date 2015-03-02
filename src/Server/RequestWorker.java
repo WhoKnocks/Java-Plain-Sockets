@@ -35,6 +35,8 @@ public class RequestWorker implements Runnable {
             String httpCommand = HTTPUtilities.getHTTPCommand(httpCommandLine);
 
             if (httpCommand.equals("GET") || httpCommand.equals("HEAD")) {
+                String headersReceived = readHeaders();
+                System.out.println(headersReceived);
                 String contentPath = HTTPUtilities.getRequestedContentPath(httpCommandLine);
                 //check if requested content is availaible on server
                 if (!FileHelper.isContentFound(contentPath)) {
@@ -48,8 +50,9 @@ public class RequestWorker implements Runnable {
                         contentSize = FileHelper.fileReader(contentPath).getBytes("UTF-8").length;
                     }
 
-                    String headers = generateHeaders(HTTPStatusCode.OK, contentSize, contentType);
-                    outToClient.writeBytes(headers);
+                    String headersToSend = generateHeaders(HTTPStatusCode.OK, contentSize, contentType);
+
+                    outToClient.writeBytes(headersToSend);
                     //send content if request is not HEAD
                     if (httpCommand.equals("GET")) {
                         if (HTTPUtilities.getRequestedContentType(httpCommandLine).equals("text/html")) {
@@ -73,11 +76,12 @@ public class RequestWorker implements Runnable {
                 FileHelper.appendToFile("./newFile.txt", getReceivedContent());
             }
 
+            outToClient.writeBytes("\n");
             //check if 1.1 to remain the connection open
-            if (!HTTPUtilities.getHTTPType(httpCommandLine).equals("1.1")) {
-                outToClient.close();
-                inFromClient.close();
-            }
+            //if (!HTTPUtilities.getHTTPType(httpCommandLine).equals("1.1")) {
+            outToClient.close();
+            inFromClient.close();
+            // }
         } catch (Exception e) {
             e.printStackTrace();
             try {
@@ -133,14 +137,12 @@ public class RequestWorker implements Runnable {
     private String getReceivedContent() {
         try {
             String clientData;
-            StringBuilder header = new StringBuilder();
+
 
             //First read all headers
-            while (!(clientData = inFromClient.readLine()).equals("")) {
-                header.append("\n").append(clientData);
-            }
+            String headers = readHeaders();
 
-            int cont_length = Integer.parseInt(HTTPUtilities.readHeader(header.toString(), "Content-Length"));
+            int cont_length = Integer.parseInt(HTTPUtilities.readHeader(headers, "Content-Length"));
 
             StringBuilder content = new StringBuilder();
             while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {
@@ -154,5 +156,14 @@ public class RequestWorker implements Runnable {
             e.printStackTrace();
         }
         return "";
+    }
+
+    private String readHeaders() throws IOException {
+        String clientData;
+        StringBuilder headers = new StringBuilder();
+        while (!(clientData = inFromClient.readLine()).equals("")) {
+            headers.append(clientData).append("\n");
+        }
+        return headers.toString();
     }
 }
