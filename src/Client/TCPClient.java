@@ -26,7 +26,7 @@ public class TCPClient {
 
     private Socket responseSocket;
     private PrintWriter outToServer;
-    private BufferedReader inFromServer;
+    private DataInputStream inFromServer;
 
     public TCPClient(String httpCommand, String uri, int portNumber, String httpVer) {
         this.httpCommand = httpCommand;
@@ -40,8 +40,7 @@ public class TCPClient {
             outToServer =
                     new PrintWriter(responseSocket.getOutputStream(), true);
             inFromServer =
-                    new BufferedReader(
-                            new InputStreamReader(responseSocket.getInputStream()));
+                    new DataInputStream(responseSocket.getInputStream());
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
             System.exit(1);
@@ -107,6 +106,24 @@ public class TCPClient {
     }
 
     public void handleResponse(String httpCommand) {
+        byte[] responseData = null;
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            byte[] tempBytes = new byte[4096];
+            int length = 0;
+
+            while ((length = inFromServer.read(tempBytes)) > -1) {
+                byteArrayOutputStream.write(tempBytes, 0, length);
+            }
+            responseData = byteArrayOutputStream.toByteArray();
+
+            String decoded = new String(responseData, "UTF-8");
+            System.out.println(decoded);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+       /*
         try {
             String response;
             StringBuilder header = new StringBuilder();
@@ -132,6 +149,7 @@ public class TCPClient {
         } catch (IOException e) {
             e.printStackTrace();
         }
+       */
     }
 
 
