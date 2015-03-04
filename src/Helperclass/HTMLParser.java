@@ -74,13 +74,17 @@ public class HTMLParser {
         int indexStartContent = 0;
         int index = 0;
         String responseLine = "";
+        Boolean firstLineRead = false;
         do {
             //controleer of het einde van een rij bereikt is
             if (inputData[index] == '\n') {
                 //check er geen lege string werd ingelezen (dus de twee lege regels tussen headers/content
                 if (responseLine.length() != 0) {
-                    headers.append(responseLine).append("\n");
-                    responseLine = "";
+                    if (firstLineRead) {
+                        headers.append(responseLine).append("\n");
+                        responseLine = "";
+                    }
+                    firstLineRead = true;
                 } else {
                     //lees de volgende bite
                     indexStartContent = index + 1;

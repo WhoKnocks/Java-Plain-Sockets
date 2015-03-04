@@ -148,7 +148,7 @@ public class RequestWorker implements Runnable {
             //First read all headers
             String headers = readHeaders();
 
-            int cont_length = Integer.parseInt(HTTPUtilities.readHeader(headers, "Content-Length"));
+            int cont_length = Integer.parseInt(HTTPUtilities.readHeaders(headers, "Content-Length"));
 
             StringBuilder content = new StringBuilder();
             while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {

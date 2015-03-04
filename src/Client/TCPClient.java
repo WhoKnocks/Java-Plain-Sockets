@@ -1,5 +1,6 @@
 package Client;
 
+import Helperclass.FileHelper;
 import Helperclass.HTMLParser;
 import Helperclass.HTTPUtilities;
 
@@ -18,6 +19,8 @@ import java.util.regex.Pattern;
  *
  */
 public class TCPClient {
+
+    private int counter = 0;
 
     private String httpCommand;
     private String hostName;
@@ -57,7 +60,7 @@ public class TCPClient {
                 new BufferedReader(
                         new InputStreamReader(System.in));
         String fullHttpCommand = HTTPUtilities.parseCommand(httpCommand, path, httpVer);
-        System.out.println("Entered inputHeadersAndData: " + fullHttpCommand);
+
 
         //headers
         String[] headers = new String[46];
@@ -79,6 +82,7 @@ public class TCPClient {
     }
 
     public void sendHTTPCommand(String command, String[] headers, String dataPostPut) {
+        System.out.println("Entered inputHeadersAndData: " + command);
         outToServer.println(command);
         //needed for HTTP1.1, it's possible to have multiple adresses on 1 adress
         outToServer.println("Host: " + hostName);
@@ -97,17 +101,13 @@ public class TCPClient {
         //needed to end the http inputHeadersAndData
         outToServer.println("");
 
-        handleResponse(HTTPUtilities.getHTTPCommand(command));
+        handleResponse();
 
-            /*
-            if (!responseSocket.isClosed() && HTTPUtilities.getHTTPType(inputHeadersAndData).equals("1.1")) {
-                inputHeadersAndData();
-            }
-            */
     }
 
-    public void handleResponse(String httpCommand) {
+    public void handleResponse() {
         byte[] responseData = null;
+        String decoded = "";
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             byte[] tempBytes = new byte[4096];
@@ -118,7 +118,7 @@ public class TCPClient {
             }
             responseData = byteArrayOutputStream.toByteArray();
 
-            String decoded = new String(responseData, "UTF-8");
+            decoded = new String(responseData, "UTF-8");
             System.out.println(decoded);
         } catch (IOException e) {
             e.printStackTrace();
@@ -127,27 +127,53 @@ public class TCPClient {
         String headers = HTMLParser.parseDataToHeaders(responseData);
         byte[] content = HTMLParser.parseDataToContent(responseData);
 
+        String contentType = HTTPUtilities.readHeaders(headers, "Content-Type");
+        switch (contentType) {
+            case "image/png":
+                saveImage(content, "png");
+                break;
+            case "image/jpg":
+                saveImage(content, "jpg");
+                break;
+            default:
+                FileHelper.newFile("./htmlpage.html");
+                FileHelper.appendToFile("./htmlpage.html", decoded);
+                Set<String> srces = getImageSrces(decoded);
+                for (String srce : srces) {
+                    System.out.println(srce);
+                }
+                for (String srce : srces) {
+                    sendHTTPCommand("GET /" + srce + " HTTP/1.1", new String[]{}, null);
+                }
+                break;
+        }
     }
-
 
     public Set<String> getImageSrces(String htmlString) {
         HashSet<String> set = new HashSet<>();
-        Pattern p = Pattern.compile("<img.*src=\"([a-zA-Z0-9\\._\\-/:\\?=&]*)\" .*");
-        Matcher m = p.matcher(htmlString);
-        while (m.find()) {
-            String src = m.group(1);
+        Pattern pLower = Pattern.compile("<img.*src=\"([a-zA-Z0-9\\._\\-/:\\?=&]*)\".*");
+        Pattern pUpper = Pattern.compile("<IMG.*SRC=\"([a-zA-Z0-9\\._\\-/:\\?=&]*)\".*");
+        Matcher mLower = pLower.matcher(htmlString);
+        Matcher mUpper = pUpper.matcher(htmlString);
+        while (mLower.find()) {
+            String src = mLower.group(1);
+            set.add(src);
+        }
+        while (mUpper.find()) {
+            String src = mUpper.group(1);
             set.add(src);
         }
         return set;
     }
 
 
-    public void saveImage(String imageString) {
+    public void saveImage(byte[] imageBytes, String extension) {
         try {
-            PrintWriter out = new PrintWriter("test.png");
-            out.print(imageString);
-            out.close();
-        } catch (FileNotFoundException e) {
+            FileOutputStream fos = new FileOutputStream("image" + counter + "." + extension);
+            counter++;
+            fos.write(imageBytes);
+            fos.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

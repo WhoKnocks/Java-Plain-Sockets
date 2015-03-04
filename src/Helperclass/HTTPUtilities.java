@@ -36,8 +36,8 @@ public class HTTPUtilities {
         return "./htmlpage" + httpRequest.split(" ")[1];
     }
 
-    public static String readHeader(String Header, String key) {
-        for (String part : Header.split("\n")) {
+    public static String readHeaders(String Headers, String key) {
+        for (String part : Headers.split("\n")) {
             if (part.split(":")[0].equalsIgnoreCase(key)) {
                 return part.split(":")[1].trim();
             }
