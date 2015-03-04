@@ -1,5 +1,6 @@
 package Client;
 
+import Helperclass.HTMLParser;
 import Helperclass.HTTPUtilities;
 
 import java.io.*;
@@ -123,33 +124,9 @@ public class TCPClient {
             e.printStackTrace();
         }
 
-       /*
-        try {
-            String response;
-            StringBuilder header = new StringBuilder();
+        String headers = HTMLParser.parseDataToHeaders(responseData);
+        byte[] content = HTMLParser.parseDataToContent(responseData);
 
-            //First read all headers
-            while (!(response = inFromServer.readLine()).equals("")) {
-                System.out.println(response);
-                header.append("\n").append(response);
-            }
-
-
-            if (!httpCommand.equals("HEAD")) {
-                int cont_length = Integer.parseInt(HTTPUtilities.readHeader(header.toString(), "Content-Length"));
-
-                StringBuilder content = new StringBuilder();
-                while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {
-                    //  System.out.println(content.toString().getBytes("UTF-8").length);
-                    response = inFromServer.readLine();
-                    System.out.println(response);
-                    content.append("\n").append(response);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-       */
     }
 
 

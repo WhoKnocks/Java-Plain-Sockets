@@ -40,6 +40,62 @@ public class HTMLParser {
         return sources;
     }
 
+    public static byte[] parseDataToContent(byte[] inputData) {
+        StringBuilder headers = new StringBuilder();
+        int indexStartContent = 0;
+        int index = 0;
+        String responseLine = "";
+        do {
+            //controleer of het einde van een rij bereikt is
+            if (inputData[index] == '\n') {
+                //check er geen lege string werd ingelezen (dus de twee lege regels tussen headers/content
+                if (responseLine.length() != 0) {
+                    responseLine = "";
+                } else {
+                    //lees de volgende bite
+                    indexStartContent = index + 1;
+                }
+            } else {
+                //kijk of het einde van een rij bereikt is
+                if (inputData[index] != '\r')
+                    responseLine += (char) inputData[index];
+            }
+
+            index++;
+        } while (indexStartContent == 0);
+
+        byte[] content = new byte[inputData.length - indexStartContent];
+        System.arraycopy(inputData, indexStartContent, content, 0, content.length);
+        return content;
+    }
+
+    public static String parseDataToHeaders(byte[] inputData) {
+        StringBuilder headers = new StringBuilder();
+        int indexStartContent = 0;
+        int index = 0;
+        String responseLine = "";
+        do {
+            //controleer of het einde van een rij bereikt is
+            if (inputData[index] == '\n') {
+                //check er geen lege string werd ingelezen (dus de twee lege regels tussen headers/content
+                if (responseLine.length() != 0) {
+                    headers.append(responseLine).append("\n");
+                    responseLine = "";
+                } else {
+                    //lees de volgende bite
+                    indexStartContent = index + 1;
+                }
+            } else {
+                //kijk of het einde van een rij bereikt is
+                if (inputData[index] != '\r')
+                    responseLine += (char) inputData[index];
+            }
+
+            index++;
+        } while (indexStartContent == 0);
+
+        return headers.toString();
+    }
 
 
     public static void main(String[] args) {
