@@ -52,7 +52,7 @@ public class HTMLParser {
                 if (responseLine.length() != 0) {
                     responseLine = "";
                 } else {
-                    //lees de volgende bite
+                    //lees de volgende byte
                     indexStartContent = index + 1;
                 }
             } else {

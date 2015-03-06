@@ -2,7 +2,9 @@ package Client;
 
 import Helperclass.FileHelper;
 import Helperclass.HTMLParser;
+import Helperclass.HTTPStatusCode;
 import Helperclass.HTTPUtilities;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.io.*;
 import java.net.Socket;
@@ -108,45 +110,91 @@ public class TCPClient {
     public void handleResponse() {
         byte[] responseData = null;
         String decoded = "";
+        String headers = "";
+        byte[] contentBytes = null;
+        String contentString = "";
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            byte[] tempBytes = new byte[4096];
-            int length = 0;
+            //byte per byte inlezen, vervolgens "\r\n" herkennen
+            int byteArrSize = 1;
+            byte[] tempBytes = new byte[1];
 
-            while ((length = inFromServer.read(tempBytes)) > -1) {
-                byteArrayOutputStream.write(tempBytes, 0, length);
+            Boolean headersFound = false;
+            while (!headersFound) {
+                inFromServer.read(tempBytes);
+                byteArrayOutputStream.write(tempBytes, 0, 1);
+                if (tempBytes[0] == '\r') {
+                    inFromServer.read(tempBytes);
+                    if (tempBytes[0] == '\n') {
+                        byteArrayOutputStream.write(tempBytes, 0, 1);
+                        inFromServer.read(tempBytes);
+                        byteArrayOutputStream.write(tempBytes, 0, 1);
+                        if ('\r' == (char) tempBytes[0]) {
+                            responseData = byteArrayOutputStream.toByteArray();
+                            decoded = new String(responseData, "UTF-8");
+                            System.out.println("Headers: " + decoded);
+                            headersFound = true;
+                        }
+                    }
+                }
             }
-            responseData = byteArrayOutputStream.toByteArray();
+            //iets lezen anders werkt img ni
+            inFromServer.read(tempBytes);
 
-            decoded = new String(responseData, "UTF-8");
-            System.out.println(decoded);
+            headers = decoded;
+            String contLength = HTTPUtilities.readHeaders(headers, "Content-Length");
+            System.out.println(contLength);
+
+            int iContLength = Integer.parseInt(contLength);
+
+            int totalSizeRead = 0;
+
+            contentBytes = new byte[500];
+
+            byteArrayOutputStream = new ByteArrayOutputStream();
+            while (totalSizeRead < iContLength) {
+                int length = inFromServer.read(contentBytes);
+                byteArrayOutputStream.write(contentBytes, 0, length);
+                // System.out.println(totalSizeRead);
+                totalSizeRead += length;
+            }
+
+            contentBytes = byteArrayOutputStream.toByteArray();
+
+            contentString = new String(contentBytes);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        String headers = HTMLParser.parseDataToHeaders(responseData);
-        byte[] content = HTMLParser.parseDataToContent(responseData);
-
         String contentType = HTTPUtilities.readHeaders(headers, "Content-Type");
+
         switch (contentType) {
             case "image/png":
-                saveImage(content, "png");
+                saveImage(contentBytes, "png");
                 break;
             case "image/jpg":
-                saveImage(content, "jpg");
+                saveImage(contentBytes, "jpg");
+                break;
+            case "image/jpeg":
+                saveImage(contentBytes, "jpeg");
                 break;
             default:
+                FileHelper.deleteFile("./htmlpage.html");
                 FileHelper.newFile("./htmlpage.html");
-                FileHelper.appendToFile("./htmlpage.html", decoded);
-                Set<String> srces = getImageSrces(decoded);
-                for (String srce : srces) {
-                    System.out.println(srce);
-                }
-                for (String srce : srces) {
-                    sendHTTPCommand("GET /" + srce + " HTTP/1.1", new String[]{}, null);
+                FileHelper.appendToFile("./htmlpage.html", contentString);
+                if (httpVer.equals("HTTP/1.1")) {
+                    Set<String> srces = getImageSrces(contentString);
+                    for (String srce : srces) {
+                        System.out.println(srce);
+                    }
+                    for (String srce : srces) {
+                        sendHTTPCommand("GET /" + srce + " HTTP/1.1", new String[]{}, null);
+                    }
                 }
                 break;
         }
+
     }
 
     public Set<String> getImageSrces(String htmlString) {

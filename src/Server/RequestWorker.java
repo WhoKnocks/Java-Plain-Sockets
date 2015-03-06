@@ -50,12 +50,12 @@ public class RequestWorker implements Runnable {
                 FileHelper.appendToFile("./newFile.txt", getReceivedContent());
             }
 
-            outToClient.writeBytes("\n");
+            outToClient.writeBytes("\r\n");
             //check if 1.1 to remain the connection open
-            //if (!HTTPUtilities.getHTTPType(httpCommandLine).equals("1.1")) {
-            outToClient.close();
-            inFromClient.close();
-            // }
+            if (!HTTPUtilities.getHTTPType(httpCommandLine).equals("1.1")) {
+                outToClient.close();
+                inFromClient.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
             try {
@@ -101,14 +101,14 @@ public class RequestWorker implements Runnable {
     }
 
     private String generateHeaders(HTTPStatusCode statusCode, int contentLength, String contentType) {
-        StringBuilder builder = new StringBuilder(statusCode.getResponse() + "\n");
+        StringBuilder builder = new StringBuilder(statusCode.getResponse() + "\r\n");
 
-        builder.append(("Accept-Ranges: bytes")).append("\n");
-        builder.append("Content-Length:" + contentLength).append("\n");
-        builder.append("Content-Type:" + contentType).append("\n");
-        builder.append("Date:" + getDate()).append("\n");
+        builder.append(("Accept-Ranges: bytes")).append("\r\n");
+        builder.append("Content-Length:" + contentLength).append("\r\n");
+        builder.append("Content-Type:" + contentType).append("\r\n");
+        builder.append("Date:" + getDate()).append("\r\n");
 
-        builder.append("\n");
+        builder.append("\r\n");
         return builder.toString();
     }
 
@@ -129,7 +129,7 @@ public class RequestWorker implements Runnable {
             StringBuilder b = new StringBuilder("");
             while ((bytesRead = in.read(buffer)) != -1) {
                 outToClient.write(buffer, 0, bytesRead);
-                b.append(bytesRead + "\n");
+                b.append(bytesRead + "\r\n");
             }
 
             in.close();
@@ -153,7 +153,7 @@ public class RequestWorker implements Runnable {
             StringBuilder content = new StringBuilder();
             while (content.toString().getBytes("UTF-8").length + 2 < cont_length) {
                 clientData = inFromClient.readLine();
-                content.append("\n").append(clientData);
+                content.append("\r\n").append(clientData);
             }
 
             return content.toString();
