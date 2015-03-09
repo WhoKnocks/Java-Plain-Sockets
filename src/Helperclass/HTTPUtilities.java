@@ -29,6 +29,15 @@ public class HTTPUtilities {
         }
     }
 
+    public static String extractPathFromRequest(String httpRequest) {
+        if (httpRequest.split(" ")[1].equals("/")) {
+            return "index";
+        } else {
+            return httpRequest.split(" ")[1];
+        }
+
+    }
+
     public static String getRequestedContentPath(String httpRequest) {
         if (httpRequest.split(" ")[1].equals("/")) {
             return "./htmlpage/index.html";
@@ -45,7 +54,7 @@ public class HTTPUtilities {
         return "-1";
     }
 
-    public static String parseCommand(String command, String path, String httpVer){
+    public static String parseCommand(String command, String path, String httpVer) {
         return command + " " + "/" + path + " " + httpVer;
     }
 

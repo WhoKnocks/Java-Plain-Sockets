@@ -69,6 +69,7 @@ public class FileHelper {
 
     public static void newFile(String fileName) {
         File file = new File(fileName);
+        file.getParentFile().mkdir();
         try {
             file.createNewFile();
         } catch (IOException e) {
@@ -76,7 +77,7 @@ public class FileHelper {
         }
     }
 
-    public static void deleteFile(String fileName){
+    public static void deleteFile(String fileName) {
         File file = new File(fileName);
         file.delete();
     }

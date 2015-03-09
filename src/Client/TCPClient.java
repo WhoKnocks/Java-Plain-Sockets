@@ -1,10 +1,8 @@
 package Client;
 
 import Helperclass.FileHelper;
-import Helperclass.HTMLParser;
-import Helperclass.HTTPStatusCode;
 import Helperclass.HTTPUtilities;
-import com.sun.org.apache.xpath.internal.operations.Bool;
+import properties.PropertiesHelper;
 
 import java.io.*;
 import java.net.Socket;
@@ -29,10 +27,13 @@ public class TCPClient {
     private String path;
     private int portNumber;
     private String httpVer;
+    private String command;
 
     private Socket responseSocket;
     private PrintWriter outToServer;
     private DataInputStream inFromServer;
+
+    private String imgSrc;
 
     public TCPClient(String httpCommand, String uri, int portNumber, String httpVer) {
         this.httpCommand = httpCommand;
@@ -84,10 +85,15 @@ public class TCPClient {
     }
 
     public void sendHTTPCommand(String command, String[] headers, String dataPostPut) {
+        setCommand(command);
         System.out.println("Entered inputHeadersAndData: " + command);
         outToServer.println(command);
         //needed for HTTP1.1, it's possible to have multiple adresses on 1 adress
         outToServer.println("Host: " + hostName);
+        if (getModifiedSince() != null) {
+            outToServer.println("if-modified-since: " + getModifiedSince());
+        }
+
         for (String header : headers) {
             if (header != null) {
                 outToServer.println(header);
@@ -104,7 +110,11 @@ public class TCPClient {
         outToServer.println("");
 
         handleResponse();
+    }
 
+
+    public String getModifiedSince() {
+        return PropertiesHelper.readProps(HTTPUtilities.extractPathFromRequest(getCommand()).split("\\.")[0]);
     }
 
     public void handleResponse() {
@@ -143,6 +153,8 @@ public class TCPClient {
 
             headers = decoded;
             String contLength = HTTPUtilities.readHeaders(headers, "Content-Length");
+            String date = HTTPUtilities.readHeaders(headers, "Date");
+            PropertiesHelper.writeprops(HTTPUtilities.extractPathFromRequest(getCommand()).split("\\.")[0], date);
             System.out.println(contLength);
 
             int iContLength = Integer.parseInt(contLength);
@@ -177,24 +189,25 @@ public class TCPClient {
                 saveImage(contentBytes, "jpg");
                 break;
             case "image/jpeg":
-                saveImage(contentBytes, "jpeg");
+                saveImage(contentBytes, "jpg");
                 break;
-            default:
-                FileHelper.deleteFile("./htmlpage.html");
-                FileHelper.newFile("./htmlpage.html");
-                FileHelper.appendToFile("./htmlpage.html", contentString);
+            case "image/gif":
+                saveImage(contentBytes, "gif");
+                break;
+            case "text/html":
+                saveWebsite(contentString);
                 if (httpVer.equals("HTTP/1.1")) {
                     Set<String> srces = getImageSrces(contentString);
-                    for (String srce : srces) {
-                        System.out.println(srce);
+                    for (String src : srces) {
+                        System.out.println(src);
                     }
-                    for (String srce : srces) {
-                        sendHTTPCommand("GET /" + srce + " HTTP/1.1", new String[]{}, null);
+                    for (String src : srces) {
+                        imgSrc = src;
+                        sendHTTPCommand("GET /" + src + " " + httpVer, new String[]{}, null);
                     }
                 }
                 break;
         }
-
     }
 
     public Set<String> getImageSrces(String htmlString) {
@@ -214,10 +227,19 @@ public class TCPClient {
         return set;
     }
 
+    public void saveWebsite(String contentString) {
+        // FileHelper.deleteFile("./htmlpage.html");
+        String totalPath = "./websites/" + hostName + "/" + path + ".html";
+        FileHelper.newFile(totalPath);
+        FileHelper.appendToFile(totalPath, contentString);
+    }
+
 
     public void saveImage(byte[] imageBytes, String extension) {
         try {
-            FileOutputStream fos = new FileOutputStream("image" + counter + "." + extension);
+            String totalPath = "./websites/" + hostName + "/" + HTTPUtilities.extractPathFromRequest(getCommand()).split("\\.")[0] + "." + extension;
+            FileHelper.newFile(totalPath);
+            FileOutputStream fos = new FileOutputStream(totalPath);
             counter++;
             fos.write(imageBytes);
             fos.close();
@@ -237,5 +259,11 @@ public class TCPClient {
         client.inputHeadersAndData();
     }
 
+    public String getCommand() {
+        return command;
+    }
 
+    public void setCommand(String command) {
+        this.command = command;
+    }
 }
