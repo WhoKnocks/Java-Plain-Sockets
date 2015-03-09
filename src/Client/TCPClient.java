@@ -8,7 +8,9 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -204,7 +206,7 @@ public class TCPClient {
 
                     for (int i = 0; i < srces.size(); i++) {
                         //as long it's not the last img
-                        if (i < srces.size() - 2) {
+                        if (i < srces.size() - 1) {
                             imgSrc = srces.get(i);
                             sendHTTPCommand("GET /" + srces.get(i) + " " + httpVer, new String[]{}, null);
                         } else {
@@ -217,19 +219,25 @@ public class TCPClient {
     }
 
     public List<String> getImageSrces(String htmlString) {
-        ArrayList<String> list = new ArrayList<>();
+        Set<String> set = new HashSet<>();
         Pattern pLower = Pattern.compile("<img.*src=\"([a-zA-Z0-9\\._\\-/:\\?=&]*)\".*");
         Pattern pUpper = Pattern.compile("<IMG.*SRC=\"([a-zA-Z0-9\\._\\-/:\\?=&]*)\".*");
         Matcher mLower = pLower.matcher(htmlString);
         Matcher mUpper = pUpper.matcher(htmlString);
         while (mLower.find()) {
             String src = mLower.group(1);
-            list.add(src);
+            set.add(src);
         }
         while (mUpper.find()) {
             String src = mUpper.group(1);
-            list.add(src);
+            set.add(src);
         }
+
+        ArrayList<String> list = new ArrayList<>();
+        for (String s : set) {
+            list.add(s);
+        }
+
         return list;
     }
 
