@@ -38,17 +38,17 @@ public class HTTPUtilities {
 
     }
 
-    public static String getRequestedContentPath(String httpRequest) {
+    public static String getRequestedContentPath(String httpRequest, String websiteToServe) {
         if (httpRequest.split(" ")[1].equals("/")) {
-            return "./htmlpage/index.html";
+            return "./websites/" + websiteToServe + "/.html";
         }
-        return "./htmlpage" + httpRequest.split(" ")[1];
+        return "./websites/" + websiteToServe + httpRequest.split(" ")[1];
     }
 
     public static String readHeaders(String Headers, String key) {
         for (String part : Headers.split("\n")) {
-            if (part.split(":")[0].equalsIgnoreCase(key)) {
-                return part.split(":")[1].trim();
+            if (part.split(":", 2)[0].equalsIgnoreCase(key)) {
+                return part.split(":", 2)[1].trim();
             }
         }
         return "-1";

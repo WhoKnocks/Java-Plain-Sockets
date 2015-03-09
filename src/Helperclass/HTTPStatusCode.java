@@ -27,6 +27,17 @@ public enum HTTPStatusCode {
             return "HTTP/1.1 404 NOT_FOUND";
         }
     },
+    BAD_REQUEST {
+        @Override
+        public String toString() {
+            return "400: Bad Request";
+        }
+
+        @Override
+        public String getResponse() {
+            return "HTTP/1.1 400 Bad request";
+        }
+    },
     SERVER_ERROR {
         @Override
         public String toString() {

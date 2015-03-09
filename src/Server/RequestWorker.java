@@ -6,6 +6,7 @@ import Helperclass.HTTPUtilities;
 
 import java.io.*;
 import java.net.Socket;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
@@ -18,6 +19,10 @@ public class RequestWorker implements Runnable {
     private BufferedReader inFromClient;
     private DataOutputStream outToClient;
 
+    private boolean hasCloseHeader = false;
+
+    private final String websiteToServe = "www.linux-ip.net";
+
 
     public RequestWorker(Socket clientSocket) {
         this.clientSocket = clientSocket;
@@ -28,33 +33,46 @@ public class RequestWorker implements Runnable {
             //open streams to send and receive
             inFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             outToClient = new DataOutputStream(clientSocket.getOutputStream());
+            String httpCommandLine;
 
-            //get first line (ex: GET / HTTP/1.1)
-            String httpCommandLine = inFromClient.readLine();
-            //get inputHeadersAndData (ex: GET )
-            String httpCommand = HTTPUtilities.getHTTPCommand(httpCommandLine);
 
-            if (httpCommand.equals("GET") || httpCommand.equals("HEAD")) {
-                handleGetOrHead(httpCommandLine);
-            }
+            do {
 
-            // if post request append to file
-            if (httpCommand.equals("POST")) {
-                FileHelper.appendToFile("./appendedFile.txt", getReceivedContent());
-            }
+                //get first line (ex: GET / HTTP/1.1)
+                httpCommandLine = inFromClient.readLine();
+                //get inputHeadersAndData (ex: GET )
+                String httpCommand = HTTPUtilities.getHTTPCommand(httpCommandLine);
 
-            //if put request make new file and place content
-            if (httpCommand.equals("PUT")) {
-                FileHelper.deleteFile("./newFile.txt");
-                FileHelper.newFile("./newFile.txt");
-                FileHelper.appendToFile("./newFile.txt", getReceivedContent());
-            }
+                if (httpCommand.equals("GET") || httpCommand.equals("HEAD")) {
+                    handleGetOrHead(httpCommandLine);
+                }
 
-            outToClient.writeBytes("\r\n");
-            //check if 1.1 to remain the connection open
-            if (!HTTPUtilities.getHTTPType(httpCommandLine).equals("1.1")) {
-                outToClient.close();
-                inFromClient.close();
+                // if post request append to file
+                if (httpCommand.equals("POST")) {
+                    FileHelper.appendToFile("./appendedFile.txt", getReceivedContent());
+                }
+
+                //if put request make new file and place content
+                if (httpCommand.equals("PUT")) {
+                    FileHelper.deleteFile("./newFile.txt");
+                    FileHelper.newFile("./newFile.txt");
+                    FileHelper.appendToFile("./newFile.txt", getReceivedContent());
+                }
+
+                outToClient.writeBytes("\r\n");
+
+
+            } while (!hasCloseHeader);
+
+            outToClient.close();
+            inFromClient.close();
+
+
+        } catch (IllegalAccessException ex) {
+            try {
+                outToClient.writeBytes(generateHeaders(HTTPStatusCode.BAD_REQUEST, 0, "text/html"));
+            } catch (IOException e1) {
+                e1.printStackTrace();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -66,13 +84,32 @@ public class RequestWorker implements Runnable {
         }
     }
 
-    private void handleGetOrHead(String httpCommandLine) throws IOException {
+    private void handleGetOrHead(String httpCommandLine) throws IllegalAccessException, IOException {
         String headersReceived = null;
         headersReceived = readHeaders();
+        String connectionHeader = HTTPUtilities.readHeaders(headersReceived, "Connection");
+        String hostHeader = HTTPUtilities.readHeaders(headersReceived, "Host");
+        if (hostHeader.equalsIgnoreCase("-1") && HTTPUtilities.getHTTPType(httpCommandLine).equalsIgnoreCase("1.1")) {
+            throw new IllegalAccessException("HTTP 1.1 and no host header");
+        }
+
+        String ifModifiedSinceHeader = HTTPUtilities.readHeaders(headersReceived, "if-modified-since");
+        if (!ifModifiedSinceHeader.equals("-1")) {
+            Date date = parseIfModified(ifModifiedSinceHeader);
+
+        }
+
+        if (HTTPUtilities.readHeaders(headersReceived, "Connection").equalsIgnoreCase("close")) {
+            hasCloseHeader = true;
+        }
+
         String httpCommand = HTTPUtilities.getHTTPCommand(httpCommandLine);
 
         System.out.println(headersReceived);
-        String contentPath = HTTPUtilities.getRequestedContentPath(httpCommandLine);
+
+        String contentPath = HTTPUtilities.getRequestedContentPath(httpCommandLine, websiteToServe);
+
+
         //first check if requested content is available on server
         if (!FileHelper.isContentFound(contentPath)) {
             outToClient.writeBytes(generateHeaders(HTTPStatusCode.NOT_FOUND, 0, "text/html"));
@@ -98,6 +135,16 @@ public class RequestWorker implements Runnable {
                 }
             }
         }
+    }
+
+    private Date parseIfModified(String date) {
+        SimpleDateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+        try {
+            return format.parse(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private String generateHeaders(HTTPStatusCode statusCode, int contentLength, String contentType) {
