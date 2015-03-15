@@ -2,17 +2,16 @@ package Client;
 
 import Helperclass.FileHelper;
 import Helperclass.HTTPUtilities;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import properties.PropertiesHelper;
 
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /*
  * A simple example TCP Client application
@@ -42,10 +41,11 @@ public class TCPClient {
         this.portNumber = portNumber;
         this.hostName = uri.split("/", 2)[0];
         this.path = uri.split("/", 2)[1];
-        this.httpVer = httpVer;
+        this.httpVer = "HTTP/" + httpVer;
 
         try {
-            responseSocket = new Socket(hostName, portNumber);
+            responseSocket =
+                    new Socket(hostName, portNumber);
             outToServer =
                     new PrintWriter(responseSocket.getOutputStream(), true);
             inFromServer =
@@ -64,7 +64,8 @@ public class TCPClient {
         BufferedReader inKeyboard =
                 new BufferedReader(
                         new InputStreamReader(System.in));
-        String fullHttpCommand = HTTPUtilities.parseCommand(httpCommand, path, httpVer);
+        String fullHttpCommand =
+                HTTPUtilities.parseCommand(httpCommand, path, httpVer);
 
 
         //headers
@@ -78,9 +79,10 @@ public class TCPClient {
 
         //post||put data
         String postOrPutData = null;
-        String httpType = HTTPUtilities.getHTTPCommand(fullHttpCommand);
-        if (httpType.equals("POST") || httpType.equals("PUT")) {
+
+        if (httpCommand.equals("POST") || httpCommand.equals("PUT")) {
             postOrPutData = inKeyboard.readLine();
+            headers[i] = "Content-Length:" + postOrPutData.length();
         }
 
         sendHTTPCommand(fullHttpCommand, headers, postOrPutData);
@@ -196,6 +198,9 @@ public class TCPClient {
             case "image/gif":
                 saveImage(contentBytes, "gif");
                 break;
+            case "application/json":
+                System.out.println(contentString);
+                break;
             case "text/html":
                 saveWebsite(contentString);
                 if (httpVer.equals("HTTP/1.1")) {
@@ -219,23 +224,11 @@ public class TCPClient {
     }
 
     public List<String> getImageSrces(String htmlString) {
-        Set<String> set = new HashSet<>();
-        Pattern pLower = Pattern.compile("<img.*src=\"([a-zA-Z0-9\\._\\-/:\\?=&]*)\".*");
-        Pattern pUpper = Pattern.compile("<IMG.*SRC=\"([a-zA-Z0-9\\._\\-/:\\?=&]*)\".*");
-        Matcher mLower = pLower.matcher(htmlString);
-        Matcher mUpper = pUpper.matcher(htmlString);
-        while (mLower.find()) {
-            String src = mLower.group(1);
-            set.add(src);
-        }
-        while (mUpper.find()) {
-            String src = mUpper.group(1);
-            set.add(src);
-        }
-
         ArrayList<String> list = new ArrayList<>();
-        for (String s : set) {
-            list.add(s);
+        Document doc = Jsoup.parse(htmlString);
+        for (Element e : doc.select("img")) {
+            String imgSrc = e.attr("src");
+            list.add(imgSrc);
         }
 
         return list;
@@ -264,7 +257,6 @@ public class TCPClient {
     }
 
     public static void main(String[] args) throws IOException {
-
         String httpCommand = args[0];
         String hostName = args[1];
         int portNumber = Integer.parseInt(args[2]);
