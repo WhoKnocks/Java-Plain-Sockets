@@ -50,7 +50,13 @@ public class HTTPUtilities {
         if (httpRequest.split(" ")[1].equals("/")) {
             return "./websites/" + websiteToServe + "/.html";
         }
-        return "./websites/" + websiteToServe + httpRequest.split(" ")[1].split("/", 2)[1];
+
+        String part = "./websites/" + websiteToServe;
+        if (!httpRequest.split(" ")[1].split("/", 2)[1].startsWith("/")) {
+            part += "/";
+        }
+
+        return part + httpRequest.split(" ")[1].split("/", 2)[1];
     }
 
 

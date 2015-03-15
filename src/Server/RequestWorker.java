@@ -3,12 +3,14 @@ package Server;
 import Helperclass.FileHelper;
 import Helperclass.HTTPStatusCode;
 import Helperclass.HTTPUtilities;
+import properties.PropertiesHelper;
 
 import java.io.*;
 import java.net.Socket;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 
 
@@ -21,9 +23,9 @@ public class RequestWorker implements Runnable {
 
     private boolean hasCloseHeader = false;
 
-    private final String websiteToServe = "www.example.com";
+    private final String websiteToServe = "www.tcpipguide.com";
 
-    private String path = "";
+    private String path;
 
 
     public RequestWorker(Socket clientSocket) {
@@ -113,11 +115,11 @@ public class RequestWorker implements Runnable {
         String ifModifiedSinceHeader = HTTPUtilities.readHeaders(headersReceived, "if-modified-since");
         if (!ifModifiedSinceHeader.equals("-1")) {
             Date date = parseIfModified(ifModifiedSinceHeader);
-            /*
-            PropertiesHelper.readProps(websiteToServe + )
-            date.before()
-            */
-
+            String cacheStringDate = PropertiesHelper.readProps(websiteToServe + path);
+            Date cacheDate = parseIfModified(cacheStringDate);
+            date.after(cacheDate);
+            outToClient.writeBytes(generateHeaders(HTTPStatusCode.NOT_MODIFIED, 0, "text/html"));
+            return;
         }
 
         if (HTTPUtilities.readHeaders(headersReceived, "Connection").equalsIgnoreCase("close")) {
@@ -159,7 +161,7 @@ public class RequestWorker implements Runnable {
     }
 
     private Date parseIfModified(String date) {
-        SimpleDateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+        SimpleDateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
         try {
             return format.parse(date);
         } catch (ParseException e) {
@@ -181,7 +183,7 @@ public class RequestWorker implements Runnable {
     }
 
     private String getDate() {
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
         Date date = new Date();
         return sdf.format(date);

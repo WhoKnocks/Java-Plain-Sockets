@@ -34,6 +34,8 @@ public class TCPClient {
     private PrintWriter outToServer;
     private DataInputStream inFromServer;
 
+    private boolean httpPageSaved = false;
+
     private String imgSrc;
 
     public TCPClient(String httpCommand, String uri, int portNumber, String httpVer) {
@@ -225,27 +227,31 @@ public class TCPClient {
                 System.out.println(contentString);
                 break;
             case "text/html":
-                saveWebsite(contentString);
+                System.out.println(contentString);
+                if (!httpPageSaved) {
 
+                    saveWebsite(contentString);
+                    httpPageSaved = true;
 
-                List<String> srces = getImageSrces(contentString);
-                for (String src : srces) {
-                    System.out.println(src);
-                }
-
-                for (int i = 0; i < srces.size(); i++) {
-                    if (httpVer.equals("HTTP/1.0")) {
-                        closeConnections();
-                        makeConnection();
+                    List<String> srces = getImageSrces(contentString);
+                    for (String src : srces) {
+                        System.out.println(src);
                     }
-                    //as long it's not the last img
-                    if (i < srces.size() - 1) {
-                        imgSrc = srces.get(i);
-                        if (!imgSrc.startsWith("http")) {
-                            sendHTTPCommand("GET /" + srces.get(i) + " " + httpVer, new String[]{}, null);
+
+                    for (int i = 0; i < srces.size(); i++) {
+                        if (httpVer.equals("HTTP/1.0")) {
+                            closeConnections();
+                            makeConnection();
                         }
-                    } else {
-                        sendHTTPCommand("GET /" + srces.get(i) + " " + httpVer, new String[]{"Connection: Close"}, null);
+                        //as long it's not the last img
+                        if (i < srces.size() - 1) {
+                            imgSrc = srces.get(i);
+                            if (!imgSrc.startsWith("http")) {
+                                sendHTTPCommand("GET /" + srces.get(i) + " " + httpVer, new String[]{}, null);
+                            }
+                        } else {
+                            sendHTTPCommand("GET /" + srces.get(i) + " " + httpVer, new String[]{"Connection: Close"}, null);
+                        }
                     }
                 }
 
