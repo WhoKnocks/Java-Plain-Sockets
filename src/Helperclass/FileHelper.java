@@ -59,6 +59,7 @@ public class FileHelper {
 
     public static void appendToFile(String path, String text) {
         try {
+
             FileWriter fw = new FileWriter(path, true);
             fw.write(text + "\n");//appends the string to the file
             fw.close();
@@ -68,8 +69,13 @@ public class FileHelper {
     }
 
     public static void newFile(String fileName) {
+        fileName = fileName.replace("//", "/");
         File file = new File(fileName);
-        file.getParentFile().mkdir();
+        if (file.exists()) {
+            return;
+        }
+        File filee = file.getParentFile();
+        boolean isMade = file.getParentFile().mkdirs();
         try {
             file.createNewFile();
         } catch (IOException e) {

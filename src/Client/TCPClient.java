@@ -11,7 +11,9 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /*
  * A simple example TCP Client application
@@ -20,8 +22,6 @@ import java.util.List;
  *
  */
 public class TCPClient {
-
-    private int counter = 0;
 
     private String httpCommand;
     private String hostName;
@@ -41,8 +41,13 @@ public class TCPClient {
         this.portNumber = portNumber;
         this.hostName = uri.split("/", 2)[0];
         this.path = uri.split("/", 2)[1];
+
         this.httpVer = "HTTP/" + httpVer;
 
+        makeConnection();
+    }
+
+    public void makeConnection() {
         try {
             responseSocket =
                     new Socket(hostName, portNumber);
@@ -56,6 +61,16 @@ public class TCPClient {
         } catch (IOException e) {
             System.err.println("Couldn't get I/O for the connection to " + hostName);
             System.exit(1);
+        }
+    }
+
+    public void closeConnections() {
+        try {
+            inFromServer.close();
+            outToServer.close();
+            responseSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -86,6 +101,7 @@ public class TCPClient {
         }
 
         sendHTTPCommand(fullHttpCommand, headers, postOrPutData);
+        closeConnections();
     }
 
     public void sendHTTPCommand(String command, String[] headers, String dataPostPut) {
@@ -161,6 +177,13 @@ public class TCPClient {
             PropertiesHelper.writeprops(hostName + HTTPUtilities.extractPathFromRequest(getCommand()).split("\\.")[0], date);
             System.out.println(contLength);
 
+            boolean isModified = true;
+            if (headers.split("\n")[0].contains("304")) {
+                isModified = false;
+                return;
+            }
+
+
             int iContLength = Integer.parseInt(contLength);
 
             int totalSizeRead = 0;
@@ -203,40 +226,53 @@ public class TCPClient {
                 break;
             case "text/html":
                 saveWebsite(contentString);
-                if (httpVer.equals("HTTP/1.1")) {
-                    List<String> srces = getImageSrces(contentString);
-                    for (String src : srces) {
-                        System.out.println(src);
-                    }
 
-                    for (int i = 0; i < srces.size(); i++) {
-                        //as long it's not the last img
-                        if (i < srces.size() - 1) {
-                            imgSrc = srces.get(i);
+
+                List<String> srces = getImageSrces(contentString);
+                for (String src : srces) {
+                    System.out.println(src);
+                }
+
+                for (int i = 0; i < srces.size(); i++) {
+                    if (httpVer.equals("HTTP/1.0")) {
+                        closeConnections();
+                        makeConnection();
+                    }
+                    //as long it's not the last img
+                    if (i < srces.size() - 1) {
+                        imgSrc = srces.get(i);
+                        if (!imgSrc.startsWith("http")) {
                             sendHTTPCommand("GET /" + srces.get(i) + " " + httpVer, new String[]{}, null);
-                        } else {
-                            sendHTTPCommand("GET /" + srces.get(i) + " " + httpVer, new String[]{"Connection: Close"}, null);
                         }
+                    } else {
+                        sendHTTPCommand("GET /" + srces.get(i) + " " + httpVer, new String[]{"Connection: Close"}, null);
                     }
                 }
+
                 break;
         }
     }
 
     public List<String> getImageSrces(String htmlString) {
         ArrayList<String> list = new ArrayList<>();
+        Set<String> set = new HashSet<>();
         Document doc = Jsoup.parse(htmlString);
         for (Element e : doc.select("img")) {
             String imgSrc = e.attr("src");
-            list.add(imgSrc);
+            set.add(imgSrc);
         }
 
+        for (String s : set) {
+            list.add(s);
+        }
         return list;
     }
 
     public void saveWebsite(String contentString) {
-        // FileHelper.deleteFile("./htmlpage.html");
-        String totalPath = "./websites/" + hostName + "/" + path + ".html";
+        String totalPath = "./websites/" + hostName + "/" + path;
+        if (!totalPath.endsWith(".html")) {
+            totalPath += ".html";
+        }
         FileHelper.deleteFile(totalPath);
         FileHelper.newFile(totalPath);
         FileHelper.appendToFile(totalPath, contentString);
@@ -248,7 +284,6 @@ public class TCPClient {
             String totalPath = "./websites/" + hostName + "/" + HTTPUtilities.extractPathFromRequest(getCommand()).split("\\.")[0] + "." + extension;
             FileHelper.newFile(totalPath);
             FileOutputStream fos = new FileOutputStream(totalPath);
-            counter++;
             fos.write(imageBytes);
             fos.close();
         } catch (IOException e) {

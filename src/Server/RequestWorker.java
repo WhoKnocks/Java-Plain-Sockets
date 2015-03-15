@@ -21,7 +21,9 @@ public class RequestWorker implements Runnable {
 
     private boolean hasCloseHeader = false;
 
-    private final String websiteToServe = "www.linux-ip.net";
+    private final String websiteToServe = "www.example.com";
+
+    private String path = "";
 
 
     public RequestWorker(Socket clientSocket) {
@@ -35,13 +37,23 @@ public class RequestWorker implements Runnable {
             outToClient = new DataOutputStream(clientSocket.getOutputStream());
             String httpCommandLine;
 
-
             do {
 
                 //get first line (ex: GET / HTTP/1.1)
-                httpCommandLine = inFromClient.readLine();
+                do {
+                    httpCommandLine = inFromClient.readLine();
+                    Thread.sleep(40);
+                } while (httpCommandLine == null);
+                System.out.println(httpCommandLine);
+
                 //get inputHeadersAndData (ex: GET )
                 String httpCommand = HTTPUtilities.getHTTPCommand(httpCommandLine);
+                try {
+                    path = httpCommandLine.split(" ")[1].split("/")[1];
+                } catch (Exception ex) {
+                    path = "/";
+                }
+
 
                 if (httpCommand.equals("GET") || httpCommand.equals("HEAD")) {
                     handleGetOrHead(httpCommandLine);
@@ -49,14 +61,19 @@ public class RequestWorker implements Runnable {
 
                 // if post request append to file
                 if (httpCommand.equals("POST")) {
-                    FileHelper.appendToFile("./appendedFile.txt", getReceivedContent());
+                    String pathtoPost = "./websites/" + websiteToServe + "/" + path + "/";
+                    pathtoPost = pathtoPost.replace("//", "/");
+                    FileHelper.newFile(pathtoPost + "post.txt");
+                    FileHelper.appendToFile(pathtoPost + "post.txt", getReceivedContent());
                 }
 
                 //if put request make new file and place content
                 if (httpCommand.equals("PUT")) {
-                    FileHelper.deleteFile("./newFile.txt");
-                    FileHelper.newFile("./newFile.txt");
-                    FileHelper.appendToFile("./newFile.txt", getReceivedContent());
+                    String pathtoPost = "./websites/" + websiteToServe + "/" + path + "/";
+                    pathtoPost = pathtoPost.replace("//", "/");
+                    FileHelper.deleteFile(pathtoPost + "put.txt");
+                    FileHelper.newFile(pathtoPost + "put.txt");
+                    FileHelper.appendToFile(pathtoPost + "put.txt", getReceivedContent());
                 }
 
                 outToClient.writeBytes("\r\n");
@@ -96,6 +113,10 @@ public class RequestWorker implements Runnable {
         String ifModifiedSinceHeader = HTTPUtilities.readHeaders(headersReceived, "if-modified-since");
         if (!ifModifiedSinceHeader.equals("-1")) {
             Date date = parseIfModified(ifModifiedSinceHeader);
+            /*
+            PropertiesHelper.readProps(websiteToServe + )
+            date.before()
+            */
 
         }
 
@@ -107,7 +128,7 @@ public class RequestWorker implements Runnable {
 
         System.out.println(headersReceived);
 
-        String contentPath = HTTPUtilities.getRequestedContentPath(httpCommandLine, websiteToServe);
+        String contentPath = HTTPUtilities.getFullRequestedContentPath(httpCommandLine, websiteToServe);
 
 
         //first check if requested content is available on server
