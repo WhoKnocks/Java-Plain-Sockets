@@ -63,7 +63,6 @@ public enum HTTPStatusCode {
         public String getResponse(String httpVer) {
             return "HTTP/" + httpVer + "304 NOT_MODIFIED";
         }
-
     };
 
     public abstract String toString();
