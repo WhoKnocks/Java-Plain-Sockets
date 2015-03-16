@@ -23,21 +23,27 @@ public class RequestWorker implements Runnable {
 
     private boolean hasCloseHeader = false;
 
-    private final String websiteToServe = "www.tcpipguide.com";
+    private final String websiteToServe = "www.tinyos.net";
 
     private String path;
+
+    private String httpCommandLine;
+    ;
 
 
     public RequestWorker(Socket clientSocket) {
         this.clientSocket = clientSocket;
     }
 
+    /**
+     * starts running thread
+     */
     public void run() {
         try {
             //open streams to send and receive
             inFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             outToClient = new DataOutputStream(clientSocket.getOutputStream());
-            String httpCommandLine;
+
 
             do {
 
@@ -103,12 +109,19 @@ public class RequestWorker implements Runnable {
         }
     }
 
+    /**
+     * Handles a get and head
+     *
+     * @param httpCommandLine
+     * @throws IllegalAccessException
+     * @throws IOException
+     */
     private void handleGetOrHead(String httpCommandLine) throws IllegalAccessException, IOException {
         String headersReceived = null;
         headersReceived = readHeaders();
         String connectionHeader = HTTPUtilities.readHeaders(headersReceived, "Connection");
         String hostHeader = HTTPUtilities.readHeaders(headersReceived, "Host");
-        if (hostHeader.equalsIgnoreCase("-1") && HTTPUtilities.getHTTPType(httpCommandLine).equalsIgnoreCase("1.1")) {
+        if (hostHeader.equalsIgnoreCase("-1") && HTTPUtilities.getHTTPVer(httpCommandLine).equalsIgnoreCase("1.1")) {
             throw new IllegalAccessException("HTTP 1.1 and no host header");
         }
 
@@ -141,7 +154,7 @@ public class RequestWorker implements Runnable {
             int contentSize;
             String contentType = HTTPUtilities.getRequestedContentType(httpCommandLine);
             if (contentType.equals("image/png") || contentType.equals("image/jpg")) {
-                contentSize = FileHelper.getImageSize(contentPath);
+                contentSize = FileHelper.getImageSize("./websites/" + websiteToServe + "/" + path);
             } else {
                 contentSize = FileHelper.fileReader(contentPath).getBytes("UTF-8").length;
             }
@@ -160,6 +173,12 @@ public class RequestWorker implements Runnable {
         }
     }
 
+    /**
+     * parses date from heads to java Date
+     *
+     * @param date date string to parse
+     * @return Date object
+     */
     private Date parseIfModified(String date) {
         SimpleDateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
         try {
@@ -170,8 +189,16 @@ public class RequestWorker implements Runnable {
         return null;
     }
 
+    /**
+     * genreates standard headers
+     *
+     * @param statusCode
+     * @param contentLength
+     * @param contentType
+     * @return
+     */
     private String generateHeaders(HTTPStatusCode statusCode, int contentLength, String contentType) {
-        StringBuilder builder = new StringBuilder(statusCode.getResponse() + "\r\n");
+        StringBuilder builder = new StringBuilder(statusCode.getResponse(HTTPUtilities.getHTTPVer(httpCommandLine)) + "\r\n");
 
         builder.append(("Accept-Ranges: bytes")).append("\r\n");
         builder.append("Content-Length:" + contentLength).append("\r\n");
@@ -182,6 +209,11 @@ public class RequestWorker implements Runnable {
         return builder.toString();
     }
 
+    /**
+     * get the date at this moment as a string
+     *
+     * @return
+     */
     private String getDate() {
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -189,6 +221,12 @@ public class RequestWorker implements Runnable {
         return sdf.format(date);
     }
 
+    /**
+     * sends bytg images
+     *
+     * @param imagePath
+     * @return
+     */
     private Byte sendImage(String imagePath) {
         try {
             File testF = new File(imagePath);
@@ -211,6 +249,11 @@ public class RequestWorker implements Runnable {
     }
 
 
+    /**
+     * receive the content from the client
+     *
+     * @return
+     */
     private String getReceivedContent() {
         try {
             String clientData;
@@ -234,6 +277,12 @@ public class RequestWorker implements Runnable {
         return "";
     }
 
+    /**
+     * reads and appends headers
+     *
+     * @return
+     * @throws IOException
+     */
     private String readHeaders() throws IOException {
         String clientData;
         StringBuilder headers = new StringBuilder();

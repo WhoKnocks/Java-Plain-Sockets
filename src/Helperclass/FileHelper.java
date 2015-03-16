@@ -7,6 +7,12 @@ import java.io.*;
  */
 public class FileHelper {
 
+    /**
+     * reads a file
+     *
+     * @param path
+     * @return
+     */
     public static String fileReader(String path) {
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             StringBuilder sb = new StringBuilder();
@@ -26,6 +32,12 @@ public class FileHelper {
         return null;
     }
 
+    /**
+     * checks if the file alerady exists
+     *
+     * @param contentPath
+     * @return
+     */
     public static Boolean isContentFound(String contentPath) {
         File f = new File(contentPath);
         if (f.exists() && !f.isDirectory()) {
@@ -34,9 +46,16 @@ public class FileHelper {
         return false;
     }
 
+    /**
+     * calculates the image size in bytes
+     *
+     * @param imagePath
+     * @return returns the image size
+     * @throws FileNotFoundException
+     */
     public static int getImageSize(String imagePath) throws FileNotFoundException {
         try {
-            File testF = new File("./htmlpage/img/power.jpg");
+            File testF = new File(imagePath);
             BufferedInputStream in = new BufferedInputStream(new FileInputStream(testF));
 
             byte[] buffer = new byte[4096];
@@ -56,7 +75,12 @@ public class FileHelper {
         return 0;
     }
 
-
+    /**
+     * appends data to file
+     *
+     * @param path
+     * @param text
+     */
     public static void appendToFile(String path, String text) {
         try {
 
@@ -68,6 +92,11 @@ public class FileHelper {
         }
     }
 
+    /**
+     * creats a new file
+     *
+     * @param fileName
+     */
     public static void newFile(String fileName) {
         fileName = fileName.replace("//", "/");
         File file = new File(fileName);
@@ -83,6 +112,11 @@ public class FileHelper {
         }
     }
 
+    /**
+     * delete a file
+     *
+     * @param fileName
+     */
     public static void deleteFile(String fileName) {
         File file = new File(fileName);
         file.delete();

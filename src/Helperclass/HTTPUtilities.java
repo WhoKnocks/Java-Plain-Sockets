@@ -5,13 +5,24 @@ package Helperclass;
  */
 public class HTTPUtilities {
 
-
-    public static String getHTTPType(String httpRequest) {
+    /**
+     * returns http ver 1.0 or 1.1
+     *
+     * @param httpRequest
+     * @return
+     */
+    public static String getHTTPVer(String httpRequest) {
         String[] commands = httpRequest.split(" ");
         String[] httpPart = commands[2].split("/");
         return httpPart[1];
     }
 
+    /**
+     * reads the command from a client command line (ex: GET)
+     *
+     * @param httpRequest
+     * @return
+     */
     public static String getHTTPCommand(String httpRequest) {
         String[] commands = new String[0];
         try {
@@ -25,6 +36,12 @@ public class HTTPUtilities {
         return commands[0];
     }
 
+    /**
+     * reads the content type from the headers
+     *
+     * @param httpRequest
+     * @return
+     */
     public static String getRequestedContentType(String httpRequest) {
         String urlCommand = httpRequest.split(" ")[1];
         if (urlCommand.endsWith(".jpg")) {
@@ -37,6 +54,12 @@ public class HTTPUtilities {
         }
     }
 
+    /**
+     * returns the path from a client request
+     *
+     * @param httpRequest
+     * @return
+     */
     public static String extractPathFromRequest(String httpRequest) {
         if (httpRequest.split(" ")[1].equals("/")) {
             return "/";
@@ -46,6 +69,13 @@ public class HTTPUtilities {
 
     }
 
+    /**
+     * gets the full content path
+     *
+     * @param httpRequest
+     * @param websiteToServe
+     * @return
+     */
     public static String getFullRequestedContentPath(String httpRequest, String websiteToServe) {
         if (httpRequest.split(" ")[1].equals("/")) {
             return "./websites/" + websiteToServe + "/.html";
@@ -60,6 +90,13 @@ public class HTTPUtilities {
     }
 
 
+    /**
+     * reads a key from the headers from a header string
+     *
+     * @param Headers
+     * @param key
+     * @return
+     */
     public static String readHeaders(String Headers, String key) {
         for (String part : Headers.split("\n")) {
             if (key.equals("Content-Type") && part.startsWith("Content-Type:")) {
@@ -73,6 +110,14 @@ public class HTTPUtilities {
         return "-1";
     }
 
+    /**
+     * parses command to send
+     *
+     * @param command
+     * @param path
+     * @param httpVer
+     * @return
+     */
     public static String parseCommand(String command, String path, String httpVer) {
         return command + " " + "/" + path + " " + httpVer;
     }

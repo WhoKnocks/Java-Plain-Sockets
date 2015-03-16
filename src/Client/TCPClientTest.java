@@ -10,9 +10,9 @@ public class TCPClientTest {
 
     @Test
     public void testGetHTTPType() throws Exception {
-        String type = HTTPUtilities.getHTTPType("GET / HTTP/1.1");
+        String type = HTTPUtilities.getHTTPVer("GET / HTTP/1.1");
         Assert.assertEquals("1.1", type);
-        type = HTTPUtilities.getHTTPType("Get / HTTP/1.0");
+        type = HTTPUtilities.getHTTPVer("Get / HTTP/1.0");
         Assert.assertEquals("1.0", type);
     }
 

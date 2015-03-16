@@ -3,6 +3,10 @@ package Helperclass;
 /**
  * Created by GJ on 25/02/2015.
  */
+
+/**
+ * class to help with http codes
+ */
 public enum HTTPStatusCode {
 
     OK {
@@ -12,8 +16,8 @@ public enum HTTPStatusCode {
         }
 
         @Override
-        public String getResponse() {
-            return "HTTP/1.1 200 OK";
+        public String getResponse(String httpVer) {
+            return "HTTP/" + httpVer + " 200 OK";
         }
     },
     NOT_FOUND {
@@ -23,8 +27,8 @@ public enum HTTPStatusCode {
         }
 
         @Override
-        public String getResponse() {
-            return "HTTP/1.1 404 NOT_FOUND";
+        public String getResponse(String httpVer) {
+            return "HTTP/" + httpVer + "404 NOT_FOUND";
         }
     },
     BAD_REQUEST {
@@ -34,8 +38,8 @@ public enum HTTPStatusCode {
         }
 
         @Override
-        public String getResponse() {
-            return "HTTP/1.1 400 Bad request";
+        public String getResponse(String httpVer) {
+            return "HTTP/" + httpVer + " 400 Bad request";
         }
     },
     SERVER_ERROR {
@@ -45,8 +49,8 @@ public enum HTTPStatusCode {
         }
 
         @Override
-        public String getResponse() {
-            return "HTTP/1.1 500 SERVER_ERROR";
+        public String getResponse(String httpVer) {
+            return "HTTP/" + httpVer + " 500 SERVER_ERROR";
         }
     },
     NOT_MODIFIED {
@@ -56,15 +60,15 @@ public enum HTTPStatusCode {
         }
 
         @Override
-        public String getResponse() {
-            return "HTTP/1.1 304 NOT_MODIFIED";
+        public String getResponse(String httpVer) {
+            return "HTTP/" + httpVer + "304 NOT_MODIFIED";
         }
 
     };
 
     public abstract String toString();
 
-    public abstract String getResponse();
+    public abstract String getResponse(String httpVer);
 
 
 }

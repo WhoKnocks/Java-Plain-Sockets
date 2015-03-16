@@ -49,6 +49,9 @@ public class TCPClient {
         makeConnection();
     }
 
+    /**
+     * Sets up the sockets and throws SERVER ERROR if necessary
+     */
     public void makeConnection() {
         try {
             responseSocket =
@@ -66,6 +69,9 @@ public class TCPClient {
         }
     }
 
+    /**
+     * Closes the connections
+     */
     public void closeConnections() {
         try {
             inFromServer.close();
@@ -77,6 +83,11 @@ public class TCPClient {
     }
 
 
+    /**
+     * Reads Headers from input and put & post data
+     *
+     * @throws IOException
+     */
     public void inputHeadersAndData() throws IOException {
         BufferedReader inKeyboard =
                 new BufferedReader(
@@ -106,6 +117,9 @@ public class TCPClient {
         closeConnections();
     }
 
+    /*
+    Sends the http command to the server, also sets modified if header
+     */
     public void sendHTTPCommand(String command, String[] headers, String dataPostPut) {
         setCommand(command);
         System.out.println("Entered inputHeadersAndData: " + command);
@@ -135,10 +149,17 @@ public class TCPClient {
     }
 
 
+    /**
+     * reads properties file
+     * @return
+     */
     public String getModifiedSince() {
         return PropertiesHelper.readProps(hostName + HTTPUtilities.extractPathFromRequest(getCommand()).split("\\.")[0]);
     }
 
+    /**
+     * reads the repsonse from the server, splits it in to header and data
+     */
     public void handleResponse() {
         byte[] responseData = null;
         String decoded = "";
@@ -259,6 +280,12 @@ public class TCPClient {
         }
     }
 
+    /**
+     * parses image sources out of a stirng html
+     *
+     * @param htmlString
+     * @return
+     */
     public List<String> getImageSrces(String htmlString) {
         ArrayList<String> list = new ArrayList<>();
         Set<String> set = new HashSet<>();
@@ -274,6 +301,11 @@ public class TCPClient {
         return list;
     }
 
+    /**
+     * saves the website to a path
+     *
+     * @param contentString
+     */
     public void saveWebsite(String contentString) {
         String totalPath = "./websites/" + hostName + "/" + path;
         if (!totalPath.endsWith(".html")) {
@@ -284,7 +316,12 @@ public class TCPClient {
         FileHelper.appendToFile(totalPath, contentString);
     }
 
-
+    /**
+     * saves bytes for images
+     *
+     * @param imageBytes
+     * @param extension
+     */
     public void saveImage(byte[] imageBytes, String extension) {
         try {
             String totalPath = "./websites/" + hostName + "/" + HTTPUtilities.extractPathFromRequest(getCommand()).split("\\.")[0] + "." + extension;
